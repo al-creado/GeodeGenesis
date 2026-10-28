@@ -44,6 +44,13 @@ export interface GameConfig {
   readonly ads: {
     /** Length of the fake ad shown by the browser-only Simulated provider. */
     readonly simulatedDurationMs: number;
+    /** How long to wait for a rewarded ad to load before giving up. */
+    readonly loadTimeoutMs: number;
+    /** Google TEST ids only. Real ids are a Stage 6 release task. */
+    readonly admob: {
+      readonly appId: string;
+      readonly rewardedUnitId: string;
+    };
   };
   readonly duplicates: {
     readonly maxLevel: number;
@@ -73,7 +80,15 @@ export const GAME_CONFIG: GameConfig = {
     diamond: 0.03,
   },
   crew: { startSlots: 3, maxSlots: 5, luckCap: 0.15, slotUnlockShards: [50, 150] },
-  ads: { simulatedDurationMs: 3000 },
+  ads: {
+    simulatedDurationMs: 3000,
+    loadTimeoutMs: 15000,
+    admob: {
+      // Google's published sample ids for Android.
+      appId: 'ca-app-pub-3940256099942544~3347511713',
+      rewardedUnitId: 'ca-app-pub-3940256099942544/5224354917',
+    },
+  },
   pity: { emeraldOrBetter: 10, rubyOrBetter: 50 },
   duplicates: {
     maxLevel: 10,
