@@ -1,0 +1,30 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  padding: 60px 16px 32px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+h1 { margin: 0; font-size: 28px; }
+h2 { font-size: 20px; margin: 28px 0 12px; }
+h3 { margin: 8px 0 2px; font-size: 16px; }
+p { margin: 0; font-size: 13px; line-height: 1.35; }
+.muted { color: var(--muted); font-weight: 700; }
+h2 .muted { font-size: 13px; margin-left: 6px; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 2px solid var(--card-border);
+  border-radius: 16px;
+  padding: 10px 10px 12px;
+  text-align: center;
+}
+
+.art { width: 100%; max-width: 120px; }

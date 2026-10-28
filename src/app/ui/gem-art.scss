@@ -1,0 +1,42 @@
+:host {
+  display: inline-block;
+  line-height: 0;
+}
+
+.gem-art {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.glow {
+  filter: drop-shadow(0 0 5px #3fc28f) drop-shadow(0 0 10px rgba(63, 194, 143, 0.6));
+}
+
+.tw {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: twinkle 2.4s ease-in-out infinite;
+}
+.tw2 { animation-delay: 0.8s; }
+.tw3 { animation-delay: 1.5s; }
+
+.shimmer {
+  animation: sweep 3.2s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes sweep {
+  0% { transform: translateX(0); }
+  60%, 100% { transform: translateX(190px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tw, .shimmer { animation: none; }
+  .tw { opacity: 0.8; }
+  .shimmer { display: none; }
+}

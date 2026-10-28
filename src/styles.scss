@@ -1,1 +1,27 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@fontsource/nunito/latin-700.css';
+@use '@fontsource/nunito/latin-800.css';
+
+:root {
+  --bg: #2a1c14;
+  --card: #3e2a1e;
+  --card-border: #5c402d;
+  --nav: #1e130d;
+  --stalactite: #1c120c;
+  --text: #f6e7d0;
+  --muted: #cdb397;
+  --gold: #f2b84b;
+  --amber: #e8833a;
+  --ink: #24160f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 700;
+}
+
+h1, h2, h3 { font-weight: 800; }

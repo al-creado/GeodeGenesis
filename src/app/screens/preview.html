@@ -1,0 +1,22 @@
+<div class="page">
+  <app-stalactites />
+  <header>
+    <h1>Gem Preview</h1>
+    <p class="muted">All {{ total }} gems, drawn in code from their ids.</p>
+  </header>
+
+  @for (g of groups; track g.rarity) {
+    <section [attr.aria-label]="g.title + ' gems'">
+      <h2>{{ g.title }} <span class="muted">{{ g.gems.length }} {{ g.gems.length === 1 ? 'gem' : 'gems' }} &middot; {{ g.odds }}%</span></h2>
+      <div class="grid">
+        @for (gem of g.gems; track gem.id) {
+          <article class="card">
+            <app-gem-art [gem]="gem" class="art" />
+            <h3>{{ gem.name }}</h3>
+            <p class="muted">{{ gem.flavor }}</p>
+          </article>
+        }
+      </div>
+    </section>
+  }
+</div>
