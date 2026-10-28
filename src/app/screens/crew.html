@@ -1,0 +1,67 @@
+<section class="card" aria-labelledby="crew-h">
+  <h2 id="crew-h">Lucky Crew</h2>
+  <ul class="slots">
+    @for (s of slots(); track $index) {
+      <li>
+        @switch (s.kind) {
+          @case ('gem') {
+            <button type="button" class="slot filled" (click)="toggle(s.gem.id, true)" [attr.aria-label]="'Remove ' + s.gem.name + ' from crew'">
+              <app-gem-art [gem]="s.gem" />
+              <span class="n">{{ s.gem.name }}</span>
+              <span class="luck">{{ luckPct(cfg.luckPerGem[s.gem.rarity]) }}</span>
+            </button>
+          }
+          @case ('empty') {
+            <div class="slot empty"><span class="plus" aria-hidden="true">+</span><span class="n muted">Empty</span></div>
+          }
+          @case ('locked') {
+            <div class="slot locked">
+              <span class="n muted">Locked</span>
+              @if (s.next) {
+                <button type="button" class="btn unlock" [disabled]="!canUnlock()" (click)="unlock()">{{ s.cost }} shards</button>
+              } @else {
+                <span class="muted small">{{ s.cost }} shards</span>
+              }
+            </div>
+          }
+        }
+      </li>
+    }
+  </ul>
+  <p class="muted small">Tap a crew gem to remove it. Unlock extra slots with shards (you have {{ game.shards() }}).</p>
+</section>
+
+<section class="card" aria-labelledby="luck-h">
+  <h2 id="luck-h">Total luck</h2>
+  <div class="row"><span class="big">{{ luckPct(game.luck()) }}</span><span class="muted">max {{ capText }}</span></div>
+  <div class="meter" role="progressbar" aria-label="Crew luck" [attr.aria-valuenow]="luckFill()" aria-valuemin="0" aria-valuemax="100">
+    <div class="meter-fill" [class.cap]="atCap()" [style.width.%]="luckFill()"></div>
+  </div>
+  @if (atCap()) { <p class="small gold">Luck cap reached. Extra luck adds nothing.</p> }
+  <p class="ruby">
+    Ruby odds: <span class="muted">{{ pct(rubyBefore) }}</span> &rarr; <strong>{{ pct(rubyAfter()) }}</strong>
+  </p>
+</section>
+
+<section class="card" aria-labelledby="own-h">
+  <h2 id="own-h">Your gems</h2>
+  @if (owned().length === 0) {
+    <p class="muted">Crack some geodes to find crew members.</p>
+  } @else {
+    <ul class="list">
+      @for (o of owned(); track o.gem.id) {
+        <li>
+          <button type="button" class="row-btn" [class.in]="o.inCrew" (click)="toggle(o.gem.id, o.inCrew)" [attr.aria-pressed]="o.inCrew">
+            <span class="thumb"><app-gem-art [gem]="o.gem" /></span>
+            <span class="info">
+              <span class="n">{{ o.gem.name }} <span class="muted lv">Lv {{ o.level }}</span></span>
+              <span class="muted small">{{ label[o.gem.rarity] }} &middot; {{ luckPct(cfg.luckPerGem[o.gem.rarity]) }} luck</span>
+            </span>
+            <span class="act">{{ o.inCrew ? 'In crew' : 'Add' }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+    @if (crewFull()) { <p class="muted small">Crew is full. Remove a gem to add another.</p> }
+  }
+</section>

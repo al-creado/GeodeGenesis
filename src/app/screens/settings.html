@@ -1,0 +1,74 @@
+<button type="button" class="back" (click)="back()">&larr; Back</button>
+<h1>Settings and rates</h1>
+
+<section class="card" aria-labelledby="rates-h" id="rates">
+  <h2 id="rates-h">Drop rates</h2>
+  <table>
+    <caption class="visually-hidden">Drop rates by rarity</caption>
+    <thead>
+      <tr><th scope="col">Rarity</th><th scope="col">Base</th><th scope="col">With your crew</th></tr>
+    </thead>
+    <tbody>
+      @for (r of rows(); track r.rarity) {
+        <tr>
+          <th scope="row"><span class="dot" [style.background]="color[r.rarity]"></span>{{ label[r.rarity] }}</th>
+          <td>{{ pct(r.base) }}</td>
+          <td>{{ pct(r.current) }}</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+  <p class="muted small">Each crack picks a rarity using these odds, then a gem of that rarity at random.</p>
+</section>
+
+<section class="card" aria-labelledby="luck-h">
+  <h2 id="luck-h">Lucky Crew</h2>
+  <ul>
+    <li>Your crew has {{ cfg.crew.startSlots }} to {{ cfg.crew.maxSlots }} slots.</li>
+    <li>Each gem adds luck by rarity:
+      @for (r of rows(); track r.rarity; let last = $last) { {{ label[r.rarity] }} {{ luckPct(r.luck) }}@if (!last) {, } }.
+    </li>
+    <li>Total luck is capped at {{ capText }}.</li>
+    <li>Luck multiplies every non-Quartz chance by (1 + luck), then all chances are rescaled to total 100%.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="pity-h">
+  <h2 id="pity-h">Pity rules</h2>
+  <ul>
+    <li>An Emerald or better is guaranteed on crack number {{ cfg.pity.emeraldOrBetter }} if you haven't gotten one.</li>
+    <li>A Ruby or better is guaranteed on crack number {{ cfg.pity.rubyOrBetter }} if you haven't gotten one.</li>
+    <li>Each counter resets when that rarity or better drops. A Ruby or Diamond resets both.</li>
+    <li>If both guarantees are due on the same crack, you get the Ruby or better.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="dup-h">
+  <h2 id="dup-h">Duplicates and shards</h2>
+  <ul>
+    <li>A duplicate gem raises its level, up to level {{ cfg.duplicates.maxLevel }}.</li>
+    <li>A duplicate at max level turns into shards:
+      @for (r of rows(); track r.rarity; let last = $last) { {{ label[r.rarity] }} {{ r.shards }}@if (!last) {, } }.
+    </li>
+    <li>Shards unlock Lucky Crew slots.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="ads-h">
+  <h2 id="ads-h">Ads</h2>
+  <p class="strong">Ads are optional and never change your pull odds.</p>
+  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the daily bonus, idle collection and the bonus after a crack.</p>
+  <label class="toggle">
+    <input type="checkbox" [checked]="game.adsEnabled()" (change)="setAds($event)" />
+    <span>Offer rewarded ads</span>
+  </label>
+</section>
+
+<section class="card" aria-labelledby="data-h">
+  <h2 id="data-h">Your data</h2>
+  <p class="muted">Progress is saved on this device.</p>
+  <button type="button" class="btn btn-quiet" (click)="reset()">{{ confirmReset() ? 'Tap again to erase everything' : 'Reset progress' }}</button>
+  @if (confirmReset()) { <button type="button" class="btn btn-quiet cancel" (click)="confirmReset.set(false)">Cancel</button> }
+</section>
+
+<p class="muted small center">Geode Genesis &middot; <a routerLink="/preview">Gem gallery</a></p>

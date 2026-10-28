@@ -26,7 +26,7 @@ Coins come from idle income, a daily bonus, and optional rewarded ads. Coins buy
 
 **Pity:** Emerald+ guaranteed at 10 cracks, Ruby+ at 50. Counters reset when that tier or better drops.
 
-**Duplicates:** level the gem up to 10; after that, a duplicate converts to shards.
+**Duplicates:** level the gem up to 10; after that, a duplicate converts to shards. **Shards** unlock Crew slots 4 and 5 (50 and 150 shards).
 
 ## Ads
 `AdService` interface with Simulated (3-second fake dialog for the browser), AdMob (test IDs), and NoAds implementations. The multiplier is granted only after the reward callback fires. "Ads are optional and never change your pull odds" is shown wherever ads are offered. A Settings and Rates screen shows full odds and pity rules (required by Google Play).
@@ -58,8 +58,8 @@ Battles, PvP, story, hand-drawn art, real-money purchases, rate-up banners, seas
 
 ## Stages
 1. Scaffold, folder structure, pull-logic module with unit tests (**done**)
-2. GemArt SVG generator and preview page
-3. Four playable tabs, simulated ads, localStorage saves
+2. GemArt SVG generator and preview page (**done**)
+3. Four playable tabs, simulated ads, localStorage saves (**done**)
 4. Capacitor Android build and AdMob rewarded ads (test IDs)
 5. Firebase anonymous auth, Firestore cloud save, Remote Config
 6. Google Play release checklist

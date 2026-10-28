@@ -1,0 +1,24 @@
+.banner { text-align: center; }
+.geode { width: 180px; margin: 0 auto 6px; }
+.banner h2 { margin-bottom: 12px; }
+.small { font-size: 13px; }
+.center { text-align: center; margin: 10px 0 0; }
+.gold { color: var(--gold); margin: 4px 0 0; }
+
+.chip {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  background: var(--card); border: 2px solid var(--gold); color: var(--text); text-decoration: none;
+  border-radius: 999px; padding: 10px 18px; margin-bottom: 14px; font-weight: 800; min-height: 44px;
+}
+
+.odds { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; }
+.odds li { display: grid; grid-template-columns: 82px 1fr 64px; align-items: center; gap: 8px; font-size: 15px; }
+.track { height: 12px; border-radius: 6px; background: var(--nav); overflow: hidden; }
+.bar { display: block; height: 100%; border-radius: 6px; }
+.val { text-align: right; font-weight: 800; }
+
+.pity { margin-bottom: 12px; }
+.pity .row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+.meter { height: 12px; border-radius: 6px; background: var(--nav); overflow: hidden; }
+.meter-fill { height: 100%; background: var(--gold); transition: width 0.4s; }
+.link { display: inline-block; margin-top: 4px; padding: 8px 0; font-weight: 800; }

@@ -1,0 +1,74 @@
+@if (batch(); as b) {
+  @if (!revealed()) {
+    <section class="stage" (click)="skip()" (keydown.enter)="skip()" tabindex="0" role="button" aria-label="Cracking the geode. Tap to skip.">
+      <div class="geode"><app-geode-art state="cracking" /></div>
+      <p class="muted">Cracking&hellip; (tap to skip)</p>
+    </section>
+  } @else {
+    <div class="revealed" role="region" aria-live="polite" aria-label="Mining result">
+      <div class="geode small-geode"><app-geode-art state="open" [glow]="glow()" /></div>
+
+      @if (single(); as r) {
+        <article class="card gem-card" [class]="'card gem-card r-' + r.gem.rarity">
+          @if (r.outcome === 'new') { <span class="tag">NEW!</span> }
+          <div class="art"><app-gem-art [gem]="r.gem" /></div>
+          <h2>{{ r.gem.name }}</h2>
+          <p class="rarity">{{ label[r.gem.rarity] }}</p>
+          <p class="flavor">{{ r.gem.flavor }}</p>
+          <ul class="facts">
+            @if (r.outcome === 'shards') {
+              <li>Max level {{ r.level }}. Converted to <strong>+{{ r.shardsGained }} shards</strong></li>
+            } @else {
+              <li>Level <strong>{{ r.level }}</strong>@if (r.outcome === 'levelUp') { <span class="up">(level up!)</span> }</li>
+            }
+            <li>Luck <strong>{{ luckPct(cfg.luckPerGem[r.gem.rarity]) }}</strong> in your crew</li>
+            @if (r.pityTrigger) { <li class="gold">Pity guarantee kicked in</li> }
+          </ul>
+        </article>
+      } @else {
+        <section class="card">
+          <h2>{{ b.results.length }} gems!</h2>
+          <p class="muted small">
+            {{ newCount() }} new
+            @if (shardTotal() > 0) { &middot; +{{ shardTotal() }} shards }
+            @if (pityHit()) { &middot; pity guarantee kicked in }
+          </p>
+          <ul class="grid">
+            @for (r of b.results; track $index) {
+              <li class="mini">
+                @if (r.outcome === 'new') { <span class="tag tag-mini">NEW!</span> }
+                <app-gem-art [gem]="r.gem" />
+                <span class="n">{{ r.gem.name }}</span>
+                <span class="muted lv">
+                  @if (r.outcome === 'shards') { +{{ r.shardsGained }} shards } @else { Lv {{ r.level }} }
+                </span>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+
+      <section class="card bonus">
+        <h2>Bonus coins +{{ b.bonus }}</h2>
+        @if (b.bonusBoosted) {
+          <p class="muted small">Doubled! +{{ extraBonus() }} extra coins collected.</p>
+        } @else if (game.adsAvailable()) {
+          <button type="button" class="btn btn-ad btn-block" [disabled]="game.adBusy()" (click)="boost()">
+            Watch ad for x{{ cfg.economy.adMultiplier }} bonus (+{{ extraBonus() }})
+          </button>
+          <app-ad-note />
+        } @else {
+          <p class="muted small">Added to your coins.</p>
+        }
+      </section>
+
+      <div class="btn-row">
+        <button type="button" class="btn" [disabled]="!canAgain()" (click)="again()">
+          Mine again &middot; {{ againCost() }} coins
+        </button>
+        <a class="btn btn-quiet" routerLink="/mine">Back to Mine</a>
+      </div>
+      @if (!canAgain()) { <p class="muted small center">Not enough coins to mine again.</p> }
+    </div>
+  }
+}

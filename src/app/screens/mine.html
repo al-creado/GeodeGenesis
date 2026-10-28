@@ -1,0 +1,49 @@
+<section class="card banner">
+  <div class="geode"><app-geode-art /></div>
+  <h2>Crack a geode</h2>
+  <div class="btn-row">
+    <button type="button" class="btn" [disabled]="!game.canAfford(1)" (click)="crack(1)">
+      Mine x1 &middot; {{ cfg.economy.crackCost1 }} coins
+    </button>
+    <button type="button" class="btn" [disabled]="!game.canAfford(10)" (click)="crack(10)">
+      Mine x10 &middot; {{ cfg.economy.crackCost10 }} coins
+    </button>
+  </div>
+  <p class="muted small center">
+    x10 saves {{ savings }} coins.
+    @if (!game.canAfford(1)) { <span>Not enough coins. Collect some at <a routerLink="/camp">Camp</a>.</span> }
+  </p>
+</section>
+
+<a class="chip" routerLink="/crew" [attr.aria-label]="'Crew luck ' + luckText() + '. Open crew'">
+  <span>Crew luck {{ luckText() }}</span>
+  <span aria-hidden="true">&rsaquo;</span>
+</a>
+
+<section class="card" aria-labelledby="odds-h">
+  <h2 id="odds-h">Your odds</h2>
+  <ul class="odds">
+    @for (r of oddsRows(); track r.rarity) {
+      <li>
+        <span class="name">{{ r.label }}</span>
+        <span class="track" aria-hidden="true"><span class="bar" [style.width.%]="r.odds < 1 ? 2 : r.odds" [style.background]="color[r.rarity]"></span></span>
+        <span class="val">{{ pct(r.odds) }}</span>
+      </li>
+    }
+  </ul>
+  <p class="muted small">Crew luck {{ luckText() }} is already included.</p>
+</section>
+
+<section class="card" aria-labelledby="pity-h">
+  <h2 id="pity-h">Pity progress</h2>
+  @for (p of pityRows(); track p.label) {
+    <div class="pity">
+      <div class="row"><span>{{ p.label }}</span><span class="muted">{{ p.count }}/{{ p.limit }}</span></div>
+      <div class="meter" role="progressbar" [attr.aria-label]="p.label + ' pity'" [attr.aria-valuenow]="p.count" aria-valuemin="0" [attr.aria-valuemax]="p.limit">
+        <div class="meter-fill" [style.width.%]="(p.count / p.limit) * 100"></div>
+      </div>
+      @if (p.next) { <p class="small gold">Your next crack is guaranteed!</p> }
+    </div>
+  }
+  <a class="link" routerLink="/settings">Full rates and pity rules</a>
+</section>

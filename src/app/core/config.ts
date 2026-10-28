@@ -20,7 +20,7 @@ export interface GameConfig {
     readonly adMultiplier: number;
     /** Coins awarded on day 1..7 of the daily bonus streak. */
     readonly dailyBonus: readonly number[];
-    /** Base coin bonus shown after a crack (doubled by a rewarded ad). */
+    /** Coin bonus granted per crack (a rewarded ad multiplies it). */
     readonly postCrackBonus: number;
   };
   /** Base odds in percent; must sum to 100. */
@@ -32,12 +32,18 @@ export interface GameConfig {
     readonly maxSlots: number;
     /** Max total luck as a fraction (0.15 = +15%). */
     readonly luckCap: number;
+    /** Shard cost to unlock each slot beyond startSlots (slot 4, then slot 5). */
+    readonly slotUnlockShards: readonly number[];
   };
   readonly pity: {
     /** Emerald-or-better guaranteed on this many cracks without one. */
     readonly emeraldOrBetter: number;
     /** Ruby-or-better guaranteed on this many cracks without one. */
     readonly rubyOrBetter: number;
+  };
+  readonly ads: {
+    /** Length of the fake ad shown by the browser-only Simulated provider. */
+    readonly simulatedDurationMs: number;
   };
   readonly duplicates: {
     readonly maxLevel: number;
@@ -66,7 +72,8 @@ export const GAME_CONFIG: GameConfig = {
     ruby: 0.02,
     diamond: 0.03,
   },
-  crew: { startSlots: 3, maxSlots: 5, luckCap: 0.15 },
+  crew: { startSlots: 3, maxSlots: 5, luckCap: 0.15, slotUnlockShards: [50, 150] },
+  ads: { simulatedDurationMs: 3000 },
   pity: { emeraldOrBetter: 10, rubyOrBetter: 50 },
   duplicates: {
     maxLevel: 10,

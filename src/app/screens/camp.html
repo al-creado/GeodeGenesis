@@ -1,0 +1,51 @@
+<section class="card idle" aria-labelledby="idle-h">
+  <div class="mascot">
+    <app-gem-art [gem]="mascot" [framed]="false" />
+  </div>
+  <h2 id="idle-h">Pebble has been mining</h2>
+  <p class="big" aria-live="off"><span class="visually-hidden">Idle coins: </span>{{ game.idleCoins() }}</p>
+  <div class="bar" role="progressbar" aria-label="Idle storage" [attr.aria-valuenow]="fillPct()" aria-valuemin="0" aria-valuemax="100">
+    <div class="fill" [style.width.%]="game.idleFill() * 100"></div>
+  </div>
+  <p class="muted small">
+    @if (full()) { Storage full. Collect to keep earning! } @else { Full in {{ fullIn() }} }
+    &middot; +{{ cfg.idleCoinsPerHour }} coins/hour, up to {{ cfg.idleCapHours }} hours
+  </p>
+
+  <div class="btn-row">
+    <button type="button" class="btn" [disabled]="game.idleCoins() <= 0" (click)="collect(false)">Collect</button>
+    @if (game.adsAvailable()) {
+      <button type="button" class="btn btn-ad" [disabled]="game.idleCoins() <= 0 || game.adBusy()" (click)="collect(true)">
+        Watch ad to collect x{{ cfg.adMultiplier }}
+      </button>
+    }
+  </div>
+  @if (game.adsAvailable()) { <app-ad-note /> }
+</section>
+
+<section class="card" aria-labelledby="daily-h">
+  <h2 id="daily-h">Daily bonus</h2>
+  <ol class="days">
+    @for (d of game.dailyRow(); track d.day) {
+      <li [class]="'day ' + d.state">
+        <span class="n">Day {{ d.day }}</span>
+        <span class="c">{{ d.coins }}</span>
+        @if (d.state === 'claimed') { <span class="tick" aria-label="claimed">&#10003;</span> }
+      </li>
+    }
+  </ol>
+
+  @if (game.dailyNext().canClaim) {
+    <div class="btn-row">
+      <button type="button" class="btn" (click)="claim(false)">Claim {{ dailyNextCoins() }} coins</button>
+      @if (game.adsAvailable()) {
+        <button type="button" class="btn btn-ad" [disabled]="game.adBusy()" (click)="claim(true)">
+          Watch ad for x{{ cfg.adMultiplier }} ({{ dailyNextCoins() * cfg.adMultiplier }} coins)
+        </button>
+      }
+    </div>
+    @if (game.adsAvailable()) { <app-ad-note /> }
+  } @else {
+    <p class="muted small center">Claimed for today. Come back tomorrow for day {{ game.dailyNext().day }}!</p>
+  }
+</section>

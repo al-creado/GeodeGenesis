@@ -1,0 +1,37 @@
+.stage { text-align: center; padding-top: 40px; cursor: pointer; }
+.geode { width: 220px; margin: 0 auto; }
+.small-geode { width: 150px; margin-bottom: 4px; }
+.small { font-size: 13px; }
+.center { text-align: center; }
+.gold { color: var(--gold); }
+
+.gem-card {
+  position: relative; text-align: center; animation: pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+  .art { width: 200px; margin: 0 auto 6px; }
+  h2 { font-size: 26px; margin-bottom: 0; }
+  .rarity { margin: 2px 0 8px; color: var(--gold); font-weight: 800; }
+  .flavor { margin: 0 0 10px; color: var(--muted); font-style: italic; }
+}
+.facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.up { color: #7fe3b4; margin-left: 4px; }
+
+.tag {
+  position: absolute; top: 10px; right: 10px; background: var(--gold); color: var(--ink);
+  font-weight: 800; padding: 4px 10px; border-radius: 999px; font-size: 14px; transform: rotate(6deg); z-index: 2;
+}
+.tag-mini { top: -6px; right: -4px; font-size: 11px; padding: 2px 7px; }
+
+.grid { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.mini {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  background: var(--bg); border: 2px solid var(--card-border); border-radius: 14px; padding: 8px;
+  app-gem-art { width: 90px; }
+  .n { font-weight: 800; }
+  .lv { font-size: 13px; }
+}
+
+.bonus h2 { font-size: 17px; }
+.btn-row { margin-bottom: 8px; }
+
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .gem-card { animation: none; } }
