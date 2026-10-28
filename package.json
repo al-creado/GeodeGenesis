@@ -1,6 +1,6 @@
 {
   "name": "geode-genesis",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -9,7 +9,9 @@
     "test": "ng test",
     "android:sync": "ng build && cap sync android",
     "android:open": "cap open android",
-    "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug"
+    "android:debug": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "android:bundle": "npm run android:sync && cd android && ./gradlew bundleRelease",
+    "assets": "node tools/generate-store-assets.js"
   },
   "private": true,
   "packageManager": "npm@10.9.4",

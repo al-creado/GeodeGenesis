@@ -70,6 +70,12 @@ describe('screens', () => {
     expect(el.textContent).toContain('Ads are optional and never change your pull odds.');
   });
 
+  it('Settings hides the privacy policy link until a URL is configured, and ad privacy options until required', () => {
+    const el = render(Settings);
+    expect(el.textContent).not.toContain('Privacy policy');
+    expect(el.textContent).not.toContain('Ad privacy options');
+  });
+
   it('MineResult shows a gem after a crack', () => {
     configure(MineResult);
     TestBed.inject(GameStateService).crack(1);

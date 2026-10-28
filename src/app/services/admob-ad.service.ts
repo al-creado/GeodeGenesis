@@ -2,7 +2,17 @@ import { GameConfig } from '../core/config';
 import { AdPlacement, AdService } from './ad.service';
 
 /** The slice of the @capacitor-community/admob plugin that we use (so tests can fake it). */
+export interface ConsentInfoLike {
+  status: string;
+  isConsentFormAvailable?: boolean;
+  canRequestAds: boolean;
+  privacyOptionsRequirementStatus: string;
+}
+
 export interface AdMobPlugin {
+  requestConsentInfo(options?: { tagForUnderAgeOfConsent?: boolean }): Promise<ConsentInfoLike>;
+  showConsentForm(): Promise<ConsentInfoLike>;
+  showPrivacyOptionsForm(): Promise<void>;
   initialize(options?: { initializeForTesting?: boolean }): Promise<void>;
   prepareRewardVideoAd(options: { adId: string; isTesting?: boolean }): Promise<unknown>;
   showRewardVideoAd(): Promise<unknown>;
@@ -17,7 +27,7 @@ export const ADMOB_EVENTS = {
 } as const;
 
 /**
- * Real rewarded ads through AdMob, using Google TEST ad unit ids only.
+ * Rewarded ads through AdMob. Ships with Google TEST ad unit ids (see GAME_CONFIG.ads.admob).
  * A reward is reported only after the plugin's reward callback fires.
  */
 export class AdMobAdService extends AdService {
@@ -58,8 +68,10 @@ export class AdMobAdService extends AdService {
     if (!this.ready) {
       this.ready = (async () => {
         try {
-          await this.plugin.initialize({ initializeForTesting: true });
-          await this.plugin.prepareRewardVideoAd({ adId: this.config.ads.admob.rewardedUnitId, isTesting: true });
+          await this.ensureConsent();
+          const { rewardedUnitId, useTestAds } = this.config.ads.admob;
+          await this.plugin.initialize({ initializeForTesting: useTestAds });
+          await this.plugin.prepareRewardVideoAd({ adId: rewardedUnitId, isTesting: useTestAds });
           return true;
         } catch {
           return false;
@@ -70,6 +82,21 @@ export class AdMobAdService extends AdService {
       });
     }
     return this.ready;
+  }
+
+  override async showPrivacyOptions(): Promise<void> {
+    await this.plugin.showPrivacyOptionsForm();
+  }
+
+  /** Google UMP consent: ask in regions that require it, and don't request ads without it. */
+  private async ensureConsent(): Promise<void> {
+    // The game is for players 13 and over, so no under-age tagging.
+    let info = await this.plugin.requestConsentInfo({ tagForUnderAgeOfConsent: false });
+    if (info.status === 'REQUIRED' && info.isConsentFormAvailable) {
+      info = await this.plugin.showConsentForm();
+    }
+    this.privacyOptionsRequired.set(info.privacyOptionsRequirementStatus === 'REQUIRED');
+    if (!info.canRequestAds) throw new Error('Ad consent was not given');
   }
 
   private async waitForAd(): Promise<boolean> {

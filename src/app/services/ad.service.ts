@@ -12,6 +12,14 @@ export type AdPlacement = 'idle' | 'daily' | 'postCrack';
 export abstract class AdService {
   abstract isAvailable(): boolean;
   abstract showRewarded(placement: AdPlacement): Promise<boolean>;
+
+  /** True when ad-privacy choices must be offered (EEA/UK consent). Only AdMob ever sets this. */
+  readonly privacyOptionsRequired = signal(false);
+
+  /** Re-open the ad-privacy choices form. No-op for providers without one. */
+  showPrivacyOptions(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 export interface SimulatedAdDialog {

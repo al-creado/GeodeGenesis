@@ -62,6 +62,9 @@
     <input type="checkbox" [checked]="game.adsEnabled()" (change)="setAds($event)" />
     <span>Offer rewarded ads</span>
   </label>
+  @if (ads.privacyOptionsRequired()) {
+    <button type="button" class="btn btn-quiet" (click)="privacyOptions()">Ad privacy options</button>
+  }
 </section>
 
 <section class="card" aria-labelledby="cloud-h">
@@ -90,4 +93,6 @@
   @if (confirmReset()) { <button type="button" class="btn btn-quiet cancel" (click)="confirmReset.set(false)">Cancel</button> }
 </section>
 
-<p class="muted small center">Geode Genesis &middot; <a routerLink="/preview">Gem gallery</a></p>
+<p class="muted small center">
+  @if (cfg.legal.privacyPolicyUrl) { <a [href]="cfg.legal.privacyPolicyUrl" target="_blank" rel="noopener">Privacy policy</a> &middot; }
+  Geode Genesis &middot; <a routerLink="/preview">Gem gallery</a></p>

@@ -46,11 +46,23 @@ export interface GameConfig {
     readonly simulatedDurationMs: number;
     /** How long to wait for a rewarded ad to load before giving up. */
     readonly loadTimeoutMs: number;
-    /** Google TEST ids only. Real ids are a Stage 6 release task. */
+    /**
+     * AdMob ids. Today these are Google's TEST ids and useTestAds is true.
+     * For release: put the real unit id here, the real app id in android strings.xml,
+     * and set useTestAds to false (see docs/release/release-checklist.md).
+     */
     readonly admob: {
       readonly appId: string;
       readonly rewardedUnitId: string;
+      /** Request test ads and register as a test device. Must be false for production. */
+      readonly useTestAds: boolean;
     };
+  };
+  readonly legal: {
+    /** Public URL of the privacy policy (required by Google Play). Set before release. */
+    readonly privacyPolicyUrl: string;
+    /** Support contact shown in the store listing and policy. */
+    readonly supportEmail: string;
   };
   readonly duplicates: {
     readonly maxLevel: number;
@@ -87,9 +99,11 @@ export const GAME_CONFIG: GameConfig = {
       // Google's published sample ids for Android.
       appId: 'ca-app-pub-3940256099942544~3347511713',
       rewardedUnitId: 'ca-app-pub-3940256099942544/5224354917',
+      useTestAds: true,
     },
   },
   pity: { emeraldOrBetter: 10, rubyOrBetter: 50 },
+  legal: { privacyPolicyUrl: '', supportEmail: '' },
   duplicates: {
     maxLevel: 10,
     shardsPerDuplicate: { quartz: 1, amethyst: 3, emerald: 10, ruby: 30, diamond: 100 },

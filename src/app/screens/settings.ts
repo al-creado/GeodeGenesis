@@ -2,6 +2,7 @@ import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RARITIES } from '../core/config';
+import { AdService } from '../services/ad.service';
 import { CloudSyncService } from '../services/cloud-sync.service';
 import { GameStateService } from '../services/game-state.service';
 import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
@@ -17,6 +18,7 @@ import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
 export class Settings {
   protected readonly game = inject(GameStateService);
   protected readonly cloud = inject(CloudSyncService);
+  protected readonly ads = inject(AdService);
   private readonly location = inject(Location);
 
   protected readonly cfg = this.game.config;
@@ -44,6 +46,10 @@ export class Settings {
 
   protected syncNow(): void {
     void this.cloud.start();
+  }
+
+  protected privacyOptions(): void {
+    void this.ads.showPrivacyOptions();
   }
 
   protected back(): void {
