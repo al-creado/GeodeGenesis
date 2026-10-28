@@ -19,6 +19,9 @@ Cozy mobile gacha sim for Android. Angular (standalone, signals, strict TS) + Ca
 ## Injection tokens (src/app/services/tokens.ts)
 `CONFIG` (active GameConfig), `CLOCK` (now in ms) and `RNG` are injectable so tests and Remote Config can swap them. Components read numbers from `GameStateService.config`, never from literals.
 
+## Cloud (Stage 5)
+Firebase JS SDK (lazy-loaded) behind `CloudBackend` (`services/cloud-backend.ts`); `FIREBASE_CONFIG = null` means local-only. Save is v2 (`savedAt`); newest save wins (`core/cloud-sync.ts`). Remote Config overrides are validated in `core/remote-config.ts` and can never touch ad ids, save version, level cap or slot counts. Setup: `docs/firebase-setup.md`.
+
 ## Game rules (quick reference)
 - Currencies: **coins** (main), **shards** (duplicate at max level). Never call coins "gems"; gems are the characters.
 - Luck = sum of crew gem luck, capped at +15%. Every non-Quartz weight x (1+luck), then ALL weights renormalized to 100%. At +3.5% luck: Quartz 59.17, Amethyst 28.58, Emerald 9.19, Ruby 2.55, Diamond 0.51 (unit test).

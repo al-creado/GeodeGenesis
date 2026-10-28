@@ -67,6 +67,9 @@ export class GameStateService {
 
   readonly lastBatch = signal<LastBatch | null>(null);
 
+  /** The full save as it stands now (read-only; used by cloud sync). */
+  readonly snapshot = this.state.asReadonly();
+
   // Idle income
   readonly idleCoins = computed(() => idleAccrued(this.state().lastIdleCollect, this.nowMs(), this.config));
   readonly idleFill = computed(() => idleFillFraction(this.state().lastIdleCollect, this.nowMs(), this.config));
@@ -191,8 +194,15 @@ export class GameStateService {
   resetProgress(): void {
     this.storage.clear();
     this.lastBatch.set(null);
-    this.state.set(createNewSave(this.clock(), this.config));
+    this.state.set({ ...createNewSave(this.clock(), this.config), savedAt: this.clock() });
     this.storage.save(this.state());
+    this.refreshClock();
+  }
+
+  /** Replace progress with a save from elsewhere (cloud). The data must already be validated. */
+  importSave(data: SaveData): void {
+    this.lastBatch.set(null);
+    this.commit(data, false);
     this.refreshClock();
   }
 
@@ -215,9 +225,11 @@ export class GameStateService {
     this.commit({ ...this.state(), coins: this.state().coins + amount });
   }
 
-  private commit(next: SaveData): void {
-    this.state.set(next);
-    this.storage.save(next);
+  /** Store a change locally. `touch` stamps savedAt so cloud sync can tell which save is newest. */
+  private commit(next: SaveData, touch = true): void {
+    const saved = touch ? { ...next, savedAt: this.clock() } : next;
+    this.state.set(saved);
+    this.storage.save(saved);
   }
 
   private loadInitial(): SaveData {

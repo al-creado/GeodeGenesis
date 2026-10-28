@@ -1,11 +1,12 @@
-import { InjectionToken } from '@angular/core';
-import { GAME_CONFIG, GameConfig } from '../core/config';
+import { inject, InjectionToken } from '@angular/core';
+import { GameConfig } from '../core/config';
 import { mathRng, Rng } from '../core/rng';
+import { RemoteConfigService } from './remote-config.service';
 
-/** Active game config. Stage 5 swaps in Remote Config values here. */
+/** Active game config: defaults plus validated Remote Config overrides. */
 export const CONFIG = new InjectionToken<GameConfig>('GameConfig', {
   providedIn: 'root',
-  factory: () => GAME_CONFIG,
+  factory: () => inject(RemoteConfigService).config,
 });
 
 /** Current time in epoch milliseconds (injectable for tests). */

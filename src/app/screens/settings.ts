@@ -2,6 +2,7 @@ import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RARITIES } from '../core/config';
+import { CloudSyncService } from '../services/cloud-sync.service';
 import { GameStateService } from '../services/game-state.service';
 import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
 
@@ -15,6 +16,7 @@ import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
 })
 export class Settings {
   protected readonly game = inject(GameStateService);
+  protected readonly cloud = inject(CloudSyncService);
   private readonly location = inject(Location);
 
   protected readonly cfg = this.game.config;
@@ -34,6 +36,15 @@ export class Settings {
       shards: this.cfg.duplicates.shardsPerDuplicate[r],
     })),
   );
+
+  protected readonly syncedText = computed(() => {
+    const at = this.cloud.lastSyncedAt();
+    return at ? new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  });
+
+  protected syncNow(): void {
+    void this.cloud.start();
+  }
 
   protected back(): void {
     this.location.back();

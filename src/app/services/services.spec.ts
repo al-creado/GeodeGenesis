@@ -7,7 +7,7 @@ import { SaveData } from '../core/save';
 import { AdPlacement, AdService, NoAdsService, SimulatedAdService } from './ad.service';
 import { GameStateService } from './game-state.service';
 import { LocalStorageSaveService, SAVE_KEY, SaveService } from './save.service';
-import { CLOCK, RNG } from './tokens';
+import { CLOCK, CONFIG, RNG } from './tokens';
 
 const E = GAME_CONFIG.economy;
 const H = 3_600_000;
@@ -47,6 +47,7 @@ describe('GameStateService', () => {
       providers: [
         { provide: SaveService, useValue: storage },
         { provide: AdService, useValue: ads },
+        { provide: CONFIG, useValue: GAME_CONFIG },
         { provide: CLOCK, useValue: () => now },
         { provide: RNG, useValue: createSequenceRng(rngValues) },
       ],

@@ -19,6 +19,17 @@ describe('migrateSave', () => {
     const s = { ...createNewSave(NOW), coins: 555, shards: 12, collection: { pebble: { level: 4 } }, crew: ['pebble'] };
     expect(migrateSave(JSON.parse(JSON.stringify(s)), NOW)).toEqual(s);
   });
+  it('upgrades a v1 save to v2 with savedAt 0', () => {
+    const v1 = { version: 1, coins: 77, collection: { pebble: { level: 2 } } };
+    const s = migrateSave(v1, NOW)!;
+    expect(s.version).toBe(GAME_CONFIG.saveVersion);
+    expect(s.coins).toBe(77);
+    expect(s.savedAt).toBe(0);
+    expect(s.collection['pebble'].level).toBe(2);
+  });
+  it('keeps savedAt on a v2 save', () => {
+    expect(migrateSave({ ...createNewSave(NOW), savedAt: 12345 }, NOW)!.savedAt).toBe(12345);
+  });
   it('rejects junk, missing version and newer versions', () => {
     expect(migrateSave(null, NOW)).toBeNull();
     expect(migrateSave('x', NOW)).toBeNull();

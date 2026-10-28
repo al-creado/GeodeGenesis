@@ -18,7 +18,7 @@
       }
     </tbody>
   </table>
-  <p class="muted small">Each crack picks a rarity using these odds, then a gem of that rarity at random.</p>
+  <p class="muted small">Each crack picks a rarity using these odds, then a gem of that rarity at random. These are the current live rates.</p>
 </section>
 
 <section class="card" aria-labelledby="luck-h">
@@ -62,6 +62,25 @@
     <input type="checkbox" [checked]="game.adsEnabled()" (change)="setAds($event)" />
     <span>Offer rewarded ads</span>
   </label>
+</section>
+
+<section class="card" aria-labelledby="cloud-h">
+  <h2 id="cloud-h">Cloud save</h2>
+  @switch (cloud.status()) {
+    @case ('off') {
+      <p class="muted">Cloud save isn't set up in this build. Your progress is saved on this device.</p>
+    }
+    @case ('syncing') { <p role="status">Syncing&hellip;</p> }
+    @case ('synced') { <p role="status">Saved to the cloud @if (syncedText()) { at {{ syncedText() }} }.</p> }
+    @case ('error') {
+      <p role="status" class="strong">Couldn't sync. Your progress is still safe on this device.</p>
+      @if (cloud.message()) { <p class="muted small">{{ cloud.message() }}</p> }
+    }
+  }
+  @if (cloud.status() !== 'off') {
+    <button type="button" class="btn btn-quiet" [disabled]="cloud.status() === 'syncing'" (click)="syncNow()">Sync now</button>
+    <p class="muted small">Your cloud save is tied to an anonymous account on this device. If you uninstall the game it may not be recoverable.</p>
+  }
 </section>
 
 <section class="card" aria-labelledby="data-h">

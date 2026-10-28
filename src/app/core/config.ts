@@ -60,7 +60,7 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIG: GameConfig = {
-  saveVersion: 1,
+  saveVersion: 2,
   economy: {
     startingCoins: 300,
     crackCost1: 100,

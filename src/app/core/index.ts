@@ -8,3 +8,5 @@ export * from './gem-art';
 export * from './economy';
 export * from './crew';
 export * from './save';
+export * from './cloud-sync';
+export * from './remote-config';

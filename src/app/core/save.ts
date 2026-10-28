@@ -16,6 +16,8 @@ export interface SaveData {
   readonly daily: DailyState;
   readonly totalCracks: number;
   readonly settings: { readonly adsEnabled: boolean };
+  /** When progress last changed (epoch ms). 0 = untouched new game. Used to pick between local and cloud saves. */
+  readonly savedAt: number;
 }
 
 export function createNewSave(nowMs: number, config: GameConfig = GAME_CONFIG): SaveData {
@@ -31,11 +33,15 @@ export function createNewSave(nowMs: number, config: GameConfig = GAME_CONFIG): 
     daily: INITIAL_DAILY,
     totalCracks: 0,
     settings: { adsEnabled: true },
+    savedAt: 0,
   };
 }
 
 /** Old-version upgraders: key N upgrades a version-N save to N+1. */
-const MIGRATIONS: Readonly<Record<number, (old: Record<string, unknown>) => Record<string, unknown>>> = {};
+const MIGRATIONS: Readonly<Record<number, (old: Record<string, unknown>) => Record<string, unknown>>> = {
+  // v1 -> v2: add savedAt for cloud conflict resolution.
+  1: (old) => ({ ...old, version: 2, savedAt: 0 }),
+};
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const int = (v: unknown, fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER): number =>
@@ -92,5 +98,6 @@ export function migrateSave(raw: unknown, nowMs: number, config: GameConfig = GA
     },
     totalCracks: int(data['totalCracks'], 0),
     settings: { adsEnabled: typeof settings['adsEnabled'] === 'boolean' ? settings['adsEnabled'] : true },
+    savedAt: int(data['savedAt'], 0),
   };
 }

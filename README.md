@@ -61,7 +61,7 @@ Battles, PvP, story, hand-drawn art, real-money purchases, rate-up banners, seas
 2. GemArt SVG generator and preview page (**done**)
 3. Four playable tabs, simulated ads, localStorage saves (**done**)
 4. Capacitor Android build and AdMob rewarded ads (test IDs) (**done**, APK build not yet verified: see Android below)
-5. Firebase anonymous auth, Firestore cloud save, Remote Config
+5. Firebase anonymous auth, Firestore cloud save, Remote Config (**done**, needs a real Firebase project: see `docs/firebase-setup.md`)
 6. Google Play release checklist
 
 ## Android
