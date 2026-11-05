@@ -1,0 +1,58 @@
+:host { display: block; line-height: 0; }
+.machine { width: 100%; height: auto; overflow: visible; }
+
+.beam { animation: flicker 5s ease-in-out infinite; }
+.bulb { animation: twinkle 1.4s ease-in-out infinite; }
+
+.ball { transform-box: fill-box; transform-origin: center; animation: bob 3.2s ease-in-out infinite; }
+.m-pulling .ball { animation: tumble 0.22s linear infinite; }
+
+.arm { transform-box: view-box; transform-origin: 196px 196px; transition: transform 0.35s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.m-pulling .arm, .m-dropping .arm { transform: rotate(110deg); }
+.m-open .arm { transform: rotate(0); transition-duration: 0.6s; }
+.lever { cursor: default; outline: none; }
+.lever.enabled { cursor: pointer; }
+.lever.enabled:hover .arm { transform: rotate(14deg); }
+.lever.enabled:focus-visible circle:last-child { stroke: #f2b84b; stroke-width: 3; }
+.lever.enabled:focus-visible .arm { filter: drop-shadow(0 0 4px #f2b84b); }
+
+.m-pulling .rig { animation: rumble 0.12s linear infinite; }
+
+/* capsule in the pickup window */
+.capsule, .aura, .sp { opacity: 0; }
+.m-dropping .capsule, .m-open .capsule { opacity: 1; }
+.m-dropping .capsule { animation: drop 0.6s cubic-bezier(0.4, 0, 0.7, 1) both; }
+.cap-top, .cap-bottom { transform-box: fill-box; transform-origin: center; transition: transform 0.45s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.m-open .cap-top { transform: translate(-5px, -13px) rotate(-28deg); }
+.m-open .cap-bottom { transform: translate(5px, 5px) rotate(18deg); }
+.aura { transform-box: fill-box; transform-origin: center; transform: scale(0.3); transition: opacity 0.4s, transform 0.5s; }
+.m-open .aura { opacity: 1; transform: scale(1); }
+.m-open .sp { animation: sparkle 1.6s ease-in-out infinite; }
+.s2 { animation-delay: 0.4s !important; }
+.s3 { animation-delay: 0.9s !important; }
+
+@keyframes twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes flicker { 0%, 100% { opacity: 1; } 45% { opacity: 0.8; } 50% { opacity: 0.55; } 55% { opacity: 0.85; } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes tumble {
+  0% { transform: translate(0, 0) rotate(0); }
+  25% { transform: translate(-6px, -9px) rotate(40deg); }
+  50% { transform: translate(5px, -4px) rotate(90deg); }
+  75% { transform: translate(7px, -10px) rotate(130deg); }
+  100% { transform: translate(0, 0) rotate(180deg); }
+}
+@keyframes rumble { 0%, 100% { transform: translateX(0); } 33% { transform: translateX(-1.4px); } 66% { transform: translateX(1.4px); } }
+@keyframes drop {
+  0% { transform: translateY(-34px); }
+  65% { transform: translateY(2px); }
+  82% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+@keyframes sparkle { 0%, 100% { opacity: 0; transform: scale(0.4); } 50% { opacity: 1; transform: scale(1.1); } }
+.sp { transform-box: fill-box; transform-origin: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .beam, .bulb, .ball, .m-pulling .ball, .m-pulling .rig, .m-dropping .capsule, .m-open .sp { animation: none; }
+  .m-open .sp { opacity: 1; }
+  .arm, .cap-top, .cap-bottom, .aura { transition: none; }
+}

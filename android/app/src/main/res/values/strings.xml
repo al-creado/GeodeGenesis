@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Geode Genesis</string>
+    <string name="title_activity_main">Geode Genesis</string>
+    <string name="package_name">com.geodegenesis.app</string>
+    <string name="custom_url_scheme">com.geodegenesis.app</string>
+    <!-- Google's sample AdMob app id. Never ship this in a release build. -->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+</resources>

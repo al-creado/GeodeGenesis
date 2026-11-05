@@ -1,0 +1,30 @@
+<section class="head">
+  <h2>Vault</h2>
+  <p class="count" aria-label="Gems discovered">{{ game.ownedCount() }}/{{ game.rosterSize }}</p>
+</section>
+
+<div class="chips" role="group" aria-label="Filter by rarity">
+  @for (f of filters; track f) {
+    <button type="button" class="chip" [class.on]="filter() === f" [attr.aria-pressed]="filter() === f" (click)="filter.set(f)">
+      {{ label(f) }}
+    </button>
+  }
+</div>
+<p class="muted small">Showing {{ foundInFilter() }}/{{ cells().length }} found</p>
+
+<ul class="grid">
+  @for (c of cells(); track c.gem.id) {
+    @if (c.level > 0) {
+      <li class="cell">
+        <app-gem-art [gem]="c.gem" />
+        <span class="n">{{ c.gem.name }}</span>
+        <span class="lv">{{ c.level >= maxLevel ? 'Lv ' + c.level + ' MAX' : 'Lv ' + c.level }}</span>
+      </li>
+    } @else {
+      <li class="cell locked" [attr.aria-label]="'Undiscovered ' + c.gem.rarity + ' gem'">
+        <span class="q" aria-hidden="true">?</span>
+        <span class="n muted">{{ label(c.gem.rarity) }}</span>
+      </li>
+    }
+  }
+</ul>
