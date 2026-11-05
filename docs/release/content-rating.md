@@ -14,7 +14,7 @@ Answer the questionnaire honestly in Play Console; the rating is computed from y
 | User-generated content or user interaction (chat, sharing, social) | None | No chat, no multiplayer, no sharing between players |
 | Shares the user's location with others | No | |
 | Allows users to purchase digital goods | **No** | No in-app purchases exist |
-| Gambling or simulated gambling (casino-style games, real or virtual currency betting) | **No** | There are no stakes: coins come from idle income, a daily bonus and optional ads, and cracking a geode is not a wager. |
+| Gambling or simulated gambling (casino-style games, real or virtual currency betting) | **No** | There are no stakes: coins come from daily rewards, goals and optional ads, and cracking a geode is not a wager. |
 | Random-item mechanic ("loot box" / gacha) | Disclose if the questionnaire asks | Cracking a geode gives a random gem. It uses only in-game coins; there are no real-money purchases. The odds and pity rules are shown in Settings and Rates. |
 | Contains ads | **Yes** (declared separately in App content) | Optional rewarded ads |
 

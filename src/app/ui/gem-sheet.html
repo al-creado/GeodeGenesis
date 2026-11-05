@@ -1,0 +1,36 @@
+<div class="backdrop" (click)="close.emit()">
+  <div class="box" role="dialog" aria-modal="true" [attr.aria-label]="gem().name + ' profile'" (click)="$event.stopPropagation()">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="pf"><app-gem-art [gem]="gem()" /></div>
+    <h2>{{ gem().name }}</h2>
+    <p class="rarity">{{ label[gem().rarity] }}</p>
+    <p class="flavor">{{ gem().flavor }}</p>
+
+    <div class="lvrow">
+      <b>Level {{ level() }} of {{ maxLevel }}</b>
+      <span class="pips" aria-hidden="true">
+        @for (p of pips; track p) { <i [class.on]="p <= level()"></i> }
+      </span>
+    </div>
+    <div class="bar" role="progressbar" aria-label="Level" [attr.aria-valuenow]="level()" aria-valuemin="1" [attr.aria-valuemax]="maxLevel">
+      <i [style.width.%]="(level() / maxLevel) * 100"></i>
+    </div>
+    <p class="muted small">
+      @if (isMax()) { Max level. Another duplicate turns into {{ shardsOnDupe() }} shards. }
+      @else { The next duplicate raises it to level {{ level() + 1 }}. }
+    </p>
+
+    <div class="stat"><span>Crew luck now</span><b>{{ luckPct(now()) }}</b></div>
+    <p class="muted small">
+      Each level above 1 adds {{ luckPct(perLevel()) }}. At level {{ maxLevel }} this gem gives {{ luckPct(atMax()) }}.
+      @if (!isMax()) { Level {{ level() + 1 }} would give {{ luckPct(next()) }}. }
+    </p>
+
+    @if (crewUnlocked()) {
+      <button type="button" class="btn" [disabled]="!inCrew() && crewFull()" (click)="toggleCrew.emit()">
+        {{ inCrew() ? 'Remove from crew' : crewFull() ? 'Crew is full' : 'Add to crew' }}
+      </button>
+    }
+    <button type="button" class="btn btn-quiet" (click)="close.emit()">Close</button>
+  </div>
+</div>

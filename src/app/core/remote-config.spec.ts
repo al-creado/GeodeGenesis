@@ -12,12 +12,12 @@ describe('applyRemoteOverrides', () => {
   });
 
   it('applies valid economy changes and leaves the rest alone', () => {
-    const r = applyRemoteOverrides(GAME_CONFIG, { economy: { crackCost1: 80, crackCost10: 700, idleCoinsPerHour: 55 } });
+    const r = applyRemoteOverrides(GAME_CONFIG, { economy: { crackCost1: 80, crackCost10: 700, postCrackBonus: 5 } });
     expect(r.applied).toEqual(['economy']);
     expect(r.config.economy.crackCost1).toBe(80);
     expect(r.config.economy.crackCost10).toBe(700);
-    expect(r.config.economy.idleCoinsPerHour).toBe(55);
-    expect(r.config.economy.idleCapHours).toBe(GAME_CONFIG.economy.idleCapHours);
+    expect(r.config.economy.postCrackBonus).toBe(5);
+    expect(r.config.economy.startingCoins).toBe(GAME_CONFIG.economy.startingCoins);
     expect(r.config.baseOdds).toBe(GAME_CONFIG.baseOdds);
   });
 
@@ -45,10 +45,25 @@ describe('applyRemoteOverrides', () => {
     expect(odds.emerald).toBeCloseTo(11, 10);
   });
 
-  it('validates the daily bonus length and values', () => {
-    expect(applyRemoteOverrides(GAME_CONFIG, { economy: { dailyBonus: [1, 2, 3] } }).rejected).toEqual(['economy']);
-    const ok = applyRemoteOverrides(GAME_CONFIG, { economy: { dailyBonus: [10, 20, 30, 40, 50, 60, 70] } });
-    expect(ok.config.economy.dailyBonus[3]).toBe(40);
+  it('validates the streak rewards: length, values, and never luck', () => {
+    expect(applyRemoteOverrides(GAME_CONFIG, { economy: { streakRewards: [{ coins: 1 }] } }).rejected).toEqual(['economy']);
+    const seven = (r: unknown) => Array(7).fill(r);
+    expect(applyRemoteOverrides(GAME_CONFIG, { economy: { streakRewards: seven({ coins: -1 }) } }).rejected).toEqual(['economy']);
+    expect(applyRemoteOverrides(GAME_CONFIG, { economy: { streakRewards: seven({ luck: 0.1 }) } }).rejected).toEqual(['economy']);
+    expect(applyRemoteOverrides(GAME_CONFIG, { economy: { streakRewards: seven({ tenTickets: 99 }) } }).rejected).toEqual(['economy']);
+    const ok = applyRemoteOverrides(GAME_CONFIG, { economy: { streakRewards: [{ coins: 50 }, { coins: 50 }, { shards: 5 }, { coins: 60 }, { coins: 70 }, { coins: 80 }, { tenTickets: 2 }] } });
+    expect(ok.applied).toEqual(['economy']);
+    expect(ok.config.economy.streakRewards[2]).toEqual({ shards: 5 });
+    expect(ok.config.economy.streakRewards[6]).toEqual({ tenTickets: 2 });
+  });
+
+  it('validates the shop numbers', () => {
+    const ok = applyRemoteOverrides(GAME_CONFIG, { shop: { sparkAt: 200, exchangeShards: { diamond: 800 } } });
+    expect(ok.config.shop.sparkAt).toBe(200);
+    expect(ok.config.shop.exchangeShards.diamond).toBe(800);
+    expect(ok.config.shop.exchangeShards.quartz).toBe(GAME_CONFIG.shop.exchangeShards.quartz);
+    expect(applyRemoteOverrides(GAME_CONFIG, { shop: { sparkAt: 0 } }).rejected).toEqual(['shop']);
+    expect(applyRemoteOverrides(GAME_CONFIG, { shop: { exchangeShards: { ruby: -3 } } }).rejected).toEqual(['shop']);
   });
 
   it('bounds the ad multiplier and luck values', () => {
@@ -57,6 +72,17 @@ describe('applyRemoteOverrides', () => {
     expect(applyRemoteOverrides(GAME_CONFIG, { economy: { adMultiplier: 3 } }).config.economy.adMultiplier).toBe(3);
     expect(applyRemoteOverrides(GAME_CONFIG, { luckPerGem: { diamond: 5 } }).rejected).toEqual(['luckPerGem']);
     expect(applyRemoteOverrides(GAME_CONFIG, { crew: { luckCap: 0.2 } }).config.crew.luckCap).toBe(0.2);
+  });
+
+  it('can never change goals, milestones, set bonuses, unlock rules or level luck', () => {
+    const r = applyRemoteOverrides(GAME_CONFIG, {
+      goals: { daily: [] },
+      progression: { levelLuckFactor: 5, milestones: [], setBonuses: { diamond: 1 } },
+      unlocks: { vaultAfterPulls: 0 },
+    });
+    expect(r.config.goals).toBe(GAME_CONFIG.goals);
+    expect(r.config.progression).toBe(GAME_CONFIG.progression);
+    expect(r.config.unlocks).toBe(GAME_CONFIG.unlocks);
   });
 
   it('can never change ad unit ids, save version, level cap or slot counts', () => {
@@ -75,7 +101,7 @@ describe('applyRemoteOverrides', () => {
 
   it('does not mutate the base config', () => {
     const before = JSON.stringify(GAME_CONFIG);
-    applyRemoteOverrides(GAME_CONFIG, { economy: { crackCost1: 1 }, pity: { rubyOrBetter: 5 } });
+    applyRemoteOverrides(GAME_CONFIG, { economy: { crackCost1: 1 }, pity: { rubyOrBetter: 5 }, shop: { sparkAt: 3 } });
     expect(JSON.stringify(GAME_CONFIG)).toBe(before);
   });
 

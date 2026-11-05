@@ -3,6 +3,49 @@
   <p class="count" aria-label="Gems discovered">{{ game.ownedCount() }}/{{ game.rosterSize }}</p>
 </section>
 
+@if (game.unlocks().shop) {
+  <a class="shoplink" routerLink="/vault/shop">
+    <span>Shop: spark and shard exchange</span>
+    <span class="muted">@if (game.sparkIsReady()) { Spark ready! } @else { {{ game.sparkProgress() }}/{{ game.config.shop.sparkAt }} } &rsaquo;</span>
+  </a>
+}
+
+<section class="card" aria-labelledby="ms-h">
+  <h2 id="ms-h">Collection rewards</h2>
+  <div class="track" role="progressbar" aria-label="Gems found" [attr.aria-valuenow]="game.ownedCount()" aria-valuemin="0" [attr.aria-valuemax]="lastMilestone">
+    <i [style.width.%]="(game.ownedCount() / lastMilestone) * 100"></i>
+  </div>
+  <ul class="ms">
+    @for (m of game.milestones(); track m.def.count) {
+      <li [class.reached]="m.reached">
+        <span class="mc">{{ m.def.count }} gems</span>
+        <span class="mr">{{ describe(m.def.reward) }}</span>
+        @if (m.claimed) {
+          <span class="done">Claimed</span>
+        } @else if (m.reached) {
+          <button type="button" class="btn claim" (click)="claim(m.def.count)">Claim</button>
+        } @else {
+          <span class="muted">{{ m.def.count - game.ownedCount() }} to go</span>
+        }
+      </li>
+    }
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="sets-h">
+  <h2 id="sets-h">Set bonuses</h2>
+  <ul class="sets">
+    @for (s of game.sets(); track s.rarity) {
+      <li>
+        <span class="sn"><i class="dot" [style.background]="color[s.rarity]"></i>{{ label(s.rarity) }}</span>
+        <b>{{ s.owned }}/{{ s.total }}</b>
+        <span class="sb" [class.on]="s.complete">{{ luckPct(s.bonus) }} luck</span>
+      </li>
+    }
+  </ul>
+  <p class="muted small">Find every gem of a rarity to earn its permanent luck bonus.</p>
+</section>
+
 <div class="chips" role="group" aria-label="Filter by rarity">
   @for (f of filters; track f) {
     <button type="button" class="chip" [class.on]="filter() === f" [attr.aria-pressed]="filter() === f" (click)="filter.set(f)">
@@ -15,10 +58,12 @@
 <ul class="grid">
   @for (c of cells(); track c.gem.id) {
     @if (c.level > 0) {
-      <li class="cell">
-        <app-gem-art [gem]="c.gem" />
-        <span class="n">{{ c.gem.name }}</span>
-        <span class="lv">{{ c.level >= maxLevel ? 'Lv ' + c.level + ' MAX' : 'Lv ' + c.level }}</span>
+      <li>
+        <button type="button" class="cell" (click)="selected.set(c.gem.id)" [attr.aria-label]="c.gem.name + ', level ' + c.level + '. Open profile'">
+          <app-gem-art [gem]="c.gem" />
+          <span class="n">{{ c.gem.name }}</span>
+          <span class="lv">{{ c.level >= maxLevel ? 'Lv ' + c.level + ' MAX' : 'Lv ' + c.level }}</span>
+        </button>
       </li>
     } @else {
       <li class="cell locked" [attr.aria-label]="'Undiscovered ' + c.gem.rarity + ' gem'">
@@ -28,3 +73,15 @@
     }
   }
 </ul>
+
+@if (selectedGem(); as g) {
+  <app-gem-sheet
+    [gem]="g"
+    [level]="selectedLevel()"
+    [inCrew]="game.crew().includes(g.id)"
+    [crewUnlocked]="game.unlocks().crew"
+    [crewFull]="crewFull()"
+    (close)="selected.set(null)"
+    (toggleCrew)="toggleCrew()"
+  />
+}

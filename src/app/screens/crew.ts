@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { rarityRank } from '../core/odds';
+import { gemLuck } from '../core/progression';
 import { findGem, GemDef, ROSTER } from '../core/roster';
 import { GameStateService } from '../services/game-state.service';
 import { ToastService } from '../services/toast.service';
@@ -7,7 +8,7 @@ import { luckPct, pct, RARITY_LABEL } from '../ui/format';
 import { GemArt } from '../ui/gem-art';
 
 type Slot =
-  | { kind: 'gem'; gem: GemDef }
+  | { kind: 'gem'; gem: GemDef; luck: number }
   | { kind: 'empty' }
   | { kind: 'locked'; cost: number; next: boolean };
 
@@ -35,7 +36,7 @@ export class Crew {
     for (let i = 0; i < this.cfg.crew.maxSlots; i++) {
       if (i < unlocked) {
         const gem = crew[i] ? findGem(ROSTER, crew[i]) : undefined;
-        out.push(gem ? { kind: 'gem', gem } : { kind: 'empty' });
+        out.push(gem ? { kind: 'gem', gem, luck: gemLuck(gem.rarity, this.game.collection()[gem.id]?.level ?? 1, this.cfg) } : { kind: 'empty' });
       } else {
         out.push({ kind: 'locked', cost: this.cfg.crew.slotUnlockShards[i - this.cfg.crew.startSlots], next: i === unlocked });
       }
@@ -43,6 +44,7 @@ export class Crew {
     return out;
   });
 
+  protected readonly parts = this.game.luckParts;
   protected readonly luckFill = computed(() => Math.min(this.game.luck() / this.cfg.crew.luckCap, 1) * 100);
   protected readonly atCap = computed(() => this.game.luck() >= this.cfg.crew.luckCap);
   protected readonly rubyBefore = this.game.baseOdds.ruby;
@@ -58,7 +60,7 @@ export class Crew {
     const c = this.game.collection();
     const crew = this.game.crew();
     return ROSTER.filter((g) => c[g.id])
-      .map((gem) => ({ gem, level: c[gem.id].level, inCrew: crew.includes(gem.id) }))
+      .map((gem) => ({ gem, level: c[gem.id].level, inCrew: crew.includes(gem.id), luck: gemLuck(gem.rarity, c[gem.id].level, this.cfg) }))
       .sort((a, b) => rarityRank(b.gem.rarity) - rarityRank(a.gem.rarity) || a.gem.name.localeCompare(b.gem.name));
   });
 

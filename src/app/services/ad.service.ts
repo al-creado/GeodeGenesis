@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { GameConfig } from '../core/config';
 import { CONFIG } from './tokens';
 
-export type AdPlacement = 'idle' | 'daily' | 'postCrack';
+export type AdPlacement = 'daily' | 'postCrack';
 
 /**
  * Rewarded ads. Ads multiply coin rewards only and never touch pull odds.

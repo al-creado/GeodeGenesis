@@ -1,11 +1,35 @@
 /**
  * Central game configuration. Every tunable number lives here; nothing else in
- * the codebase may hard-code costs, odds, luck, caps, pity or idle rates.
+ * the codebase may hard-code costs, odds, luck, caps, pity, rewards or unlock rules.
  * (Stage 5: these values can be overridden by Firebase Remote Config.)
  */
 
 export const RARITIES = ['quartz', 'amethyst', 'emerald', 'ruby', 'diamond'] as const;
 export type Rarity = (typeof RARITIES)[number];
+
+/** Something the player can be given: coins, shards, a free x10 ticket, or permanent luck. */
+export interface Reward {
+  readonly coins?: number;
+  readonly shards?: number;
+  readonly tenTickets?: number;
+  /** Permanent luck as a fraction (0.005 = +0.5%). Only used by collection milestones. */
+  readonly luck?: number;
+}
+
+export interface GoalDef {
+  readonly id: string;
+  readonly label: string;
+  /** pulls: every pull. rareFinds: pulls that gave `goals.rareFrom` or better. */
+  readonly metric: 'pulls' | 'rareFinds';
+  readonly target: number;
+  readonly reward: Reward;
+}
+
+export interface MilestoneDef {
+  /** Distinct gems found. */
+  readonly count: number;
+  readonly reward: Reward;
+}
 
 export interface GameConfig {
   readonly saveVersion: number;
@@ -13,15 +37,40 @@ export interface GameConfig {
     readonly startingCoins: number;
     readonly crackCost1: number;
     readonly crackCost10: number;
-    /** Idle coins earned per hour while away. */
-    readonly idleCoinsPerHour: number;
-    readonly idleCapHours: number;
     /** Multiplier granted by a completed rewarded ad. Never affects odds. */
     readonly adMultiplier: number;
-    /** Coins awarded on day 1..7 of the daily bonus streak. */
-    readonly dailyBonus: readonly number[];
-    /** Coin bonus granted per crack (a rewarded ad multiplies it). */
+    /** What the login streak pays on day 1..7. */
+    readonly streakRewards: readonly Reward[];
+    /** Coin bonus granted per paid pull (a rewarded ad multiplies it). */
     readonly postCrackBonus: number;
+  };
+  readonly goals: {
+    readonly daily: readonly GoalDef[];
+    readonly weekly: readonly GoalDef[];
+    /** The rarity that counts as a "rare find" for goals. */
+    readonly rareFrom: Rarity;
+  };
+  readonly progression: {
+    /** Each gem level above 1 adds this fraction of the gem's base luck. */
+    readonly levelLuckFactor: number;
+    readonly milestones: readonly MilestoneDef[];
+    /** Permanent luck for owning every gem of a rarity. */
+    readonly setBonuses: Readonly<Record<Rarity, number>>;
+  };
+  readonly shop: {
+    /** Pulls needed to earn one spark (pick any gem). */
+    readonly sparkAt: number;
+    /** Shard price to buy a specific missing gem, by rarity. */
+    readonly exchangeShards: Readonly<Record<Rarity, number>>;
+  };
+  /** When tabs and extras appear for a new player. */
+  readonly unlocks: {
+    readonly vaultAfterPulls: number;
+    readonly dailyAfterPulls: number;
+    /** Crew unlocks once the player owns a gem of this rarity or better. */
+    readonly crewAfterRarity: Rarity;
+    readonly shopAfterPulls: number;
+    readonly pityAfterPulls: number;
   };
   /** Base odds in percent; must sum to 100. */
   readonly baseOdds: Readonly<Record<Rarity, number>>;
@@ -72,17 +121,41 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIG: GameConfig = {
-  saveVersion: 3,
+  saveVersion: 4,
   economy: {
     startingCoins: 300,
     crackCost1: 100,
     crackCost10: 900,
-    idleCoinsPerHour: 15,
-    idleCapHours: 8,
     adMultiplier: 2,
-    dailyBonus: [10, 15, 20, 30, 40, 50, 75],
+    streakRewards: [
+      { coins: 100 }, { coins: 100 }, { coins: 150 }, { coins: 150 }, { coins: 200 }, { coins: 250 },
+      { tenTickets: 1 },
+    ],
     postCrackBonus: 3,
   },
+  goals: {
+    rareFrom: 'amethyst',
+    daily: [
+      { id: 'd-pulls', label: 'Pull 10 times today', metric: 'pulls', target: 10, reward: { coins: 100 } },
+      { id: 'd-rare', label: 'Find an Amethyst or better', metric: 'rareFinds', target: 1, reward: { shards: 5 } },
+    ],
+    weekly: [{ id: 'w-pulls', label: 'This week: pull 70 times', metric: 'pulls', target: 70, reward: { tenTickets: 1 } }],
+  },
+  progression: {
+    levelLuckFactor: 0.1,
+    milestones: [
+      { count: 6, reward: { coins: 200 } },
+      { count: 12, reward: { shards: 10 } },
+      { count: 18, reward: { luck: 0.005 } },
+      { count: 24, reward: { luck: 0.01 } },
+    ],
+    setBonuses: { quartz: 0.002, amethyst: 0.005, emerald: 0.01, ruby: 0.02, diamond: 0.03 },
+  },
+  shop: {
+    sparkAt: 150,
+    exchangeShards: { quartz: 20, amethyst: 60, emerald: 150, ruby: 250, diamond: 600 },
+  },
+  unlocks: { vaultAfterPulls: 1, dailyAfterPulls: 1, crewAfterRarity: 'emerald', shopAfterPulls: 10, pityAfterPulls: 10 },
   baseOdds: { quartz: 60, amethyst: 28, emerald: 9, ruby: 2.5, diamond: 0.5 },
   luckPerGem: {
     quartz: 0.002,

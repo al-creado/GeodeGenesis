@@ -1,0 +1,20 @@
+.backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(15, 8, 4, 0.8); display: flex; align-items: flex-end; justify-content: center; }
+.box {
+  width: min(480px, 100%); max-height: 92dvh; overflow-y: auto; background: var(--card); border: 2px solid var(--card-border);
+  border-radius: 22px 22px 0 0; padding: 8px 18px calc(18px + var(--sab)); text-align: center;
+}
+.grab { width: 40px; height: 4px; border-radius: 3px; background: var(--card-border); margin: 0 auto 8px; }
+.pf { width: 150px; margin: 0 auto; }
+h2 { font-size: 26px; margin: 4px 0 0; }
+.rarity { margin: 2px 0 6px; color: var(--gold); font-weight: 800; }
+.flavor { margin: 0 0 12px; color: var(--muted); font-style: italic; }
+.lvrow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.pips { display: flex; gap: 3px; }
+.pips i { width: 9px; height: 9px; border-radius: 50%; background: var(--card-border); }
+.pips i.on { background: var(--gold); }
+.bar { height: 12px; border-radius: 6px; background: var(--nav); overflow: hidden; border: 2px solid var(--card-border); }
+.bar i { display: block; height: 100%; background: var(--gold); }
+.small { font-size: 13px; margin: 6px 0 10px; text-align: left; }
+.stat { display: flex; justify-content: space-between; padding-top: 10px; border-top: 2px solid var(--card-border); font-size: 16px; }
+.stat b { color: var(--gold); }
+.btn { width: 100%; margin-top: 8px; }

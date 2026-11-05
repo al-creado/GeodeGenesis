@@ -35,3 +35,17 @@
 
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .gem-card { animation: none; } }
+
+.unlock { margin: 0 0 10px; padding: 10px 14px; border-radius: 14px; border: 2px solid var(--gold); background: #4a3322; font-size: 14px; text-align: center; }
+.open-all { margin-top: 12px; }
+.capsule {
+  position: relative; width: 70px; height: 70px; border-radius: 50%; border: 2.5px solid var(--ink); padding: 0; cursor: pointer;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4); overflow: hidden; animation: wobble 2.2s ease-in-out infinite;
+  &::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 50%; background: rgba(255, 255, 255, 0.4); }
+  &::before { content: ''; position: absolute; left: 22%; top: 18%; width: 16%; height: 16%; border-radius: 50%; background: #fff; z-index: 1; }
+  &.c-emerald { box-shadow: 0 0 14px rgba(63, 194, 143, 0.9); }
+  &.c-ruby { box-shadow: 0 0 14px rgba(255, 107, 138, 0.9); }
+  &.c-diamond { box-shadow: 0 0 16px rgba(255, 255, 255, 0.9); }
+}
+@keyframes wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+@media (prefers-reduced-motion: reduce) { .capsule { animation: none; } }

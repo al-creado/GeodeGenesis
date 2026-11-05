@@ -6,44 +6,33 @@ import {
   DailyState,
   dailyCells,
   dailyNext,
-  idleAccrued,
-  idleFillFraction,
-  idleMsUntilFull,
   INITIAL_DAILY,
+  freePullAvailable,
   localDayNumber,
+  localWeekNumber,
   postCrackBonus,
+  rewardHasCoins,
+  scaleReward,
 } from './economy';
 
 const H = 3_600_000;
 const E = GAME_CONFIG.economy;
 
-describe('idle income', () => {
-  it('accrues per hour', () => {
-    expect(idleAccrued(0, 2 * H)).toBe(2 * E.idleCoinsPerHour);
-  });
-  it('floors partial coins', () => {
-    expect(idleAccrued(0, 1)).toBe(0);
-  });
-  it('caps at the idle cap', () => {
-    const cap = E.idleCapHours * E.idleCoinsPerHour;
-    expect(idleAccrued(0, E.idleCapHours * H)).toBe(cap);
-    expect(idleAccrued(0, 100 * H)).toBe(cap);
-  });
-  it('never goes negative if the clock moves backwards', () => {
-    expect(idleAccrued(10 * H, 0)).toBe(0);
-  });
-  it('reports fill fraction and time until full', () => {
-    expect(idleFillFraction(0, (E.idleCapHours / 2) * H)).toBeCloseTo(0.5);
-    expect(idleFillFraction(0, 99 * H)).toBe(1);
-    expect(idleMsUntilFull(0, 2 * H)).toBe((E.idleCapHours - 2) * H);
-    expect(idleMsUntilFull(0, 99 * H)).toBe(0);
-  });
-});
-
 describe('multipliers and bonuses', () => {
   it('applies the ad multiplier', () => {
     expect(applyMultiplier(60, E.adMultiplier)).toBe(120);
     expect(applyMultiplier(7, 1)).toBe(7);
+  });
+  it('multiplies only the coins of a reward', () => {
+    expect(scaleReward({ coins: 100 }, 2)).toEqual({ coins: 200 });
+    expect(scaleReward({ coins: 100, shards: 5, tenTickets: 1 }, 2)).toEqual({ coins: 200, shards: 5, tenTickets: 1 });
+    expect(scaleReward({ shards: 5 }, 2)).toEqual({ shards: 5 });
+    expect(scaleReward({ tenTickets: 1 }, 3)).toEqual({ tenTickets: 1 });
+  });
+  it('knows whether a reward has coins', () => {
+    expect(rewardHasCoins({ coins: 1 })).toBe(true);
+    expect(rewardHasCoins({ tenTickets: 1 })).toBe(false);
+    expect(rewardHasCoins({ coins: 0 })).toBe(false);
   });
   it('scales the post-crack bonus by cracks', () => {
     expect(postCrackBonus(1)).toBe(E.postCrackBonus);
@@ -61,15 +50,30 @@ describe('localDayNumber', () => {
   });
 });
 
-describe('daily bonus', () => {
+describe('weeks and free pulls', () => {
+  it('starts weeks on Monday', () => {
+    // epoch day 0 was a Thursday; day 4 is the next Monday.
+    expect(localWeekNumber(0)).toBe(localWeekNumber(3)); // Thu..Sun
+    expect(localWeekNumber(4)).toBe(localWeekNumber(0) + 1); // Monday starts a new week
+    expect(localWeekNumber(4)).toBe(localWeekNumber(10)); // Mon..Sun
+    expect(localWeekNumber(11)).toBe(localWeekNumber(4) + 1);
+  });
+  it('gives one free pull per local day', () => {
+    expect(freePullAvailable(null, 100)).toBe(true);
+    expect(freePullAvailable(100, 100)).toBe(false);
+    expect(freePullAvailable(100, 101)).toBe(true);
+  });
+});
+
+describe('login calendar', () => {
   it('starts on day 1 and pays that day', () => {
     const r = claimDaily(INITIAL_DAILY, 100)!;
     expect(r.day).toBe(1);
-    expect(r.coins).toBe(E.dailyBonus[0]);
+    expect(r.reward).toEqual(E.streakRewards[0]);
     expect(r.daily).toEqual({ claimedDay: 1, lastClaimDay: 100 });
   });
 
-  it('pays the configured amount on day 4', () => {
+  it('pays the configured reward on day 4', () => {
     let d: DailyState = INITIAL_DAILY;
     let last = null;
     for (let day = 0; day < 4; day++) {
@@ -77,7 +81,7 @@ describe('daily bonus', () => {
       d = last.daily;
     }
     expect(last!.day).toBe(4);
-    expect(last!.coins).toBe(E.dailyBonus[3]);
+    expect(last!.reward).toEqual(E.streakRewards[3]);
   });
 
   it('cannot be claimed twice on the same day', () => {
@@ -86,7 +90,7 @@ describe('daily bonus', () => {
     expect(dailyNext(first.daily, 100).canClaim).toBe(false);
   });
 
-  it('continues the streak on consecutive days and wraps after day 7', () => {
+  it('advances through the calendar and wraps after day 7', () => {
     let d: DailyState = INITIAL_DAILY;
     const days: number[] = [];
     for (let i = 0; i < 9; i++) {
@@ -97,9 +101,9 @@ describe('daily bonus', () => {
     expect(days).toEqual([1, 2, 3, 4, 5, 6, 7, 1, 2]);
   });
 
-  it('resets to day 1 after a missed day', () => {
+  it('is forgiving: a missed day does not reset the calendar', () => {
     const d = claimDaily(claimDaily(INITIAL_DAILY, 100)!.daily, 101)!.daily; // claimed day 2
-    expect(claimDaily(d, 103)!.day).toBe(1);
+    expect(claimDaily(d, 110)!.day).toBe(3);
   });
 
   it('builds the 7-cell row', () => {
@@ -108,17 +112,17 @@ describe('daily bonus', () => {
     expect(dailyCells(d, 100).map((c) => c.state)).toEqual([
       'claimed', 'claimed', 'claimed', 'upcoming', 'upcoming', 'upcoming', 'upcoming',
     ]);
-    // next day: day 4 available
-    expect(dailyCells(d, 101).map((c) => c.state)).toEqual([
-      'claimed', 'claimed', 'claimed', 'available', 'upcoming', 'upcoming', 'upcoming',
-    ]);
-    // streak broken: day 1 available, rest upcoming
-    expect(dailyCells(d, 105).map((c) => c.state)).toEqual([
-      'available', 'upcoming', 'upcoming', 'upcoming', 'upcoming', 'upcoming', 'upcoming',
-    ]);
-    // after a finished cycle the next claim is day 1 again
-    expect(dailyCells({ claimedDay: 7, lastClaimDay: 100 }, 101)[0].state).toBe('available');
+    // any later day, even after missing some: day 4 is available and earlier days stay lit
+    for (const day of [101, 105, 200]) {
+      expect(dailyCells(d, day).map((c) => c.state)).toEqual([
+        'claimed', 'claimed', 'claimed', 'available', 'upcoming', 'upcoming', 'upcoming',
+      ]);
+    }
+    // after a finished week the calendar starts again
+    expect(dailyCells({ claimedDay: 7, lastClaimDay: 100 }, 101).map((c) => c.state)[0]).toBe('available');
+    expect(dailyCells({ claimedDay: 7, lastClaimDay: 100 }, 101).filter((c) => c.state === 'claimed')).toHaveLength(0);
+    expect(dailyCells({ claimedDay: 7, lastClaimDay: 100 }, 100).filter((c) => c.state === 'claimed')).toHaveLength(7);
     expect(dailyCells(INITIAL_DAILY, 100)[0].state).toBe('available');
-    expect(dailyCells(d, 101).map((c) => c.coins)).toEqual([...E.dailyBonus]);
+    expect(dailyCells(d, 101).map((c) => c.reward)).toEqual([...E.streakRewards]);
   });
 });

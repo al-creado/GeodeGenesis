@@ -1,36 +1,55 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { addToCrew, crewRarities, nextSlotCost, removeFromCrew, unlockSlot } from '../core/crew';
+import { Reward } from '../core/config';
+import { addToCrew, nextSlotCost, removeFromCrew, unlockSlot } from '../core/crew';
 import {
   applyMultiplier,
   claimDaily,
   dailyCells,
   dailyNext,
-  idleAccrued,
-  idleFillFraction,
-  idleMsUntilFull,
+  freePullAvailable,
   localDayNumber,
+  localWeekNumber,
   postCrackBonus,
+  rewardHasCoins,
+  scaleReward,
 } from '../core/economy';
+import { claimGoal, goalViews, recordPulls, rollGoals } from '../core/goals';
 import { adjustedOdds, computeLuck } from '../core/odds';
-import { CrackResult } from '../core/pull';
+import { claimMilestone, crewMembers, gemLuck, milestoneStates, permanentLuck, setStates } from '../core/progression';
+import { CrackResult, DuplicateOutcome } from '../core/pull';
 import { createNewSave, migrateSave, SaveData } from '../core/save';
-import { ROSTER } from '../core/roster';
+import { findGem, GemDef, ROSTER } from '../core/roster';
+import { claimSpark, exchangeGem, sparkReady } from '../core/shop';
+import { bestRarity, computeUnlocks, Unlocks } from '../core/unlocks';
 import { AdPlacement, AdService } from './ad.service';
 import { PullService } from './pull.service';
 import { SaveService } from './save.service';
 import { ToastService } from './toast.service';
 import { CLOCK, CONFIG } from './tokens';
 
-/** How many geodes one crack button opens. */
+/** How many gems one pull button gives. */
 export type CrackCount = 1 | 10;
+
+/** Where the payment for a pull comes from. */
+export type PullSource = 'coins' | 'daily' | 'ticket';
 
 export interface LastBatch {
   readonly count: CrackCount;
+  readonly source: PullSource;
   readonly results: readonly CrackResult[];
-  /** Coins already granted as the post-crack bonus. */
+  /** Coins already granted as the post-pull bonus (0 for free pulls). */
   readonly bonus: number;
   /** True once a rewarded ad has doubled the bonus. */
   readonly bonusBoosted: boolean;
+  /** Tabs and features this pull unlocked. */
+  readonly unlocked: readonly (keyof Unlocks)[];
+}
+
+export interface SparkResult {
+  readonly gem: GemDef;
+  readonly outcome: DuplicateOutcome;
+  readonly level: number;
+  readonly shardsGained: number;
 }
 
 /** The single source of truth for player progress. */
@@ -48,11 +67,13 @@ export class GameStateService {
 
   readonly coins = computed(() => this.state().coins);
   readonly shards = computed(() => this.state().shards);
+  readonly tenTickets = computed(() => this.state().tenTickets);
   readonly collection = computed(() => this.state().collection);
   readonly pity = computed(() => this.state().pity);
   readonly crew = computed(() => this.state().crew);
   readonly crewSlots = computed(() => this.state().crewSlots);
   readonly totalCracks = computed(() => this.state().totalCracks);
+  readonly sparkProgress = computed(() => this.state().sparkProgress);
   readonly adsEnabled = computed(() => this.state().settings.adsEnabled);
   readonly introSeen = computed(() => this.state().settings.introSeen);
   readonly cloudSaveEnabled = computed(() => this.state().settings.cloudSave);
@@ -65,7 +86,19 @@ export class GameStateService {
   readonly ownedCount = computed(() => Object.keys(this.state().collection).length);
   readonly rosterSize = ROSTER.length;
 
-  readonly luck = computed(() => computeLuck(crewRarities(this.crew(), ROSTER), this.config));
+  /** What the player has unlocked so far (derived from progress). */
+  readonly unlocks = computed(() => computeUnlocks(this.totalCracks(), bestRarity(this.collection(), ROSTER), this.config));
+  /** True until the very first pull, which is free. */
+  readonly firstPullFree = computed(() => this.totalCracks() === 0);
+
+  /** Where total luck comes from. `total` is what pulls use (capped). */
+  readonly luckParts = computed(() => {
+    const members = crewMembers(this.crew(), this.collection(), ROSTER);
+    const crew = members.reduce((a, m) => a + gemLuck(m.rarity, m.level, this.config), 0);
+    const perm = permanentLuck(this.collection(), this.state().claimedMilestones, ROSTER, this.config);
+    return { crew, sets: perm.sets, milestones: perm.milestones, total: computeLuck(members, this.config, perm.total) };
+  });
+  readonly luck = computed(() => this.luckParts().total);
   readonly odds = computed(() => adjustedOdds(this.luck(), this.config));
   readonly baseOdds = adjustedOdds(0, this.config);
 
@@ -79,20 +112,25 @@ export class GameStateService {
   /** The full save as it stands now (read-only; used by cloud sync). */
   readonly snapshot = this.state.asReadonly();
 
-  // Idle income
-  readonly idleCoins = computed(() => idleAccrued(this.state().lastIdleCollect, this.nowMs(), this.config));
-  readonly idleFill = computed(() => idleFillFraction(this.state().lastIdleCollect, this.nowMs(), this.config));
-  readonly idleMsLeft = computed(() => idleMsUntilFull(this.state().lastIdleCollect, this.nowMs(), this.config));
-
-  // Daily bonus
-  private readonly today = computed(() => localDayNumber(this.nowMs(), new Date(this.nowMs()).getTimezoneOffset()));
+  // Time-based things
+  private readonly today = computed(() => this.dayOf(this.nowMs()));
+  private readonly thisWeek = computed(() => localWeekNumber(this.today()));
   readonly dailyRow = computed(() => dailyCells(this.state().daily, this.today(), this.config));
   readonly dailyNext = computed(() => dailyNext(this.state().daily, this.today(), this.config));
+  readonly freePullReady = computed(() => freePullAvailable(this.state().freePullDay, this.today()));
+
+  // Goals, milestones, sets
+  readonly goals = computed(() => goalViews(rollGoals(this.state().goals, this.today(), this.thisWeek(), this.config), this.config));
+  readonly milestones = computed(() => milestoneStates(this.ownedCount(), this.state().claimedMilestones, this.config));
+  readonly sets = computed(() => setStates(this.collection(), ROSTER, this.config));
+
+  // Shop
+  readonly sparkIsReady = computed(() => sparkReady(this.sparkProgress(), this.config));
 
   // Crew
   readonly nextSlotCost = computed(() => nextSlotCost(this.crewSlots(), this.config));
 
-  /** Refresh "now" so idle and daily displays update. Call on a timer and on app resume. */
+  /** Refresh "now" so daily displays update at midnight. Call on a timer and on app resume. */
   refreshClock(): void {
     this.nowMs.set(this.clock());
   }
@@ -108,7 +146,9 @@ export class GameStateService {
     });
   }
 
+  /** Coin price of a pull. The very first single pull is free. */
   cost(count: CrackCount): number {
+    if (count === 1 && this.firstPullFree()) return 0;
     return count === 1 ? this.config.economy.crackCost1 : this.config.economy.crackCost10;
   }
 
@@ -116,59 +156,108 @@ export class GameStateService {
     return this.coins() >= this.cost(count);
   }
 
-  /** Crack geodes. Returns null if the player can't afford it. */
-  crack(count: CrackCount): LastBatch | null {
-    if (!this.canAfford(count)) return null;
+  /** Whether a pull of this kind can be made right now. */
+  canPull(count: CrackCount, source: PullSource = 'coins'): boolean {
+    if (source === 'daily') return count === 1 && this.freePullReady();
+    if (source === 'ticket') return count === 10 && this.tenTickets() > 0;
+    return this.canAfford(count);
+  }
+
+  /** Make a pull. Returns null if it is not allowed right now. */
+  crack(count: CrackCount, source: PullSource = 'coins'): LastBatch | null {
+    if (!this.canPull(count, source)) return null;
     const s = this.state();
+    const cost = source === 'coins' ? this.cost(count) : 0;
     const batch = this.pulls.crack(count, s.collection, s.pity, this.luck());
-    const bonus = postCrackBonus(count, this.config);
+    const bonus = cost > 0 ? postCrackBonus(count, this.config) : 0;
+    const now = this.clock();
+    const day = this.dayOf(now);
+    const rolled = rollGoals(s.goals, day, localWeekNumber(day), this.config);
     this.commit({
       ...s,
-      coins: s.coins - this.cost(count) + bonus,
+      coins: s.coins - cost + bonus,
       shards: s.shards + batch.shardsGained,
+      tenTickets: source === 'ticket' ? s.tenTickets - 1 : s.tenTickets,
       collection: batch.collection,
       pity: batch.pity,
+      freePullDay: source === 'daily' ? day : s.freePullDay,
+      goals: recordPulls(rolled, batch.results.map((r) => r.gem.rarity), this.config),
+      sparkProgress: s.sparkProgress + count,
       totalCracks: s.totalCracks + count,
     });
-    const result: LastBatch = { count, results: batch.results, bonus, bonusBoosted: false };
+    this.nowMs.set(now);
+    const before = computeUnlocks(s.totalCracks, bestRarity(s.collection, ROSTER), this.config);
+    const after = computeUnlocks(s.totalCracks + count, bestRarity(batch.collection, ROSTER), this.config);
+    const unlocked = (Object.keys(after) as (keyof Unlocks)[]).filter((k) => after[k] && !before[k]);
+    const result: LastBatch = { count, source, results: batch.results, bonus, bonusBoosted: false, unlocked };
     this.lastBatch.set(result);
     return result;
   }
 
-  /** Watch an ad to multiply the post-crack bonus. Returns the extra coins granted. */
+  /** Watch an ad to multiply the post-pull bonus. Returns the extra coins granted. */
   async boostCrackBonus(): Promise<number> {
     const batch = this.lastBatch();
-    if (!batch || batch.bonusBoosted || !(await this.watchAd('postCrack'))) return 0;
+    if (!batch || batch.bonus <= 0 || batch.bonusBoosted || !(await this.watchAd('postCrack'))) return 0;
     const extra = applyMultiplier(batch.bonus, this.config.economy.adMultiplier) - batch.bonus;
-    this.addCoins(extra);
+    this.commit({ ...this.state(), coins: this.state().coins + extra });
     this.lastBatch.set({ ...batch, bonusBoosted: true });
     return extra;
   }
 
-  /** Collect idle coins, optionally multiplied by a rewarded ad. Returns coins gained. */
-  async collectIdle(withAd: boolean): Promise<number> {
-    if (this.idleCoins() <= 0) return 0;
-    const multiplier = withAd ? await this.adMultiplier('idle') : 1;
-    if (multiplier === 0) return 0;
+  /** Claim today's login-calendar reward. With an ad, its coins are multiplied. Returns what was granted. */
+  async claimStreak(withAd: boolean): Promise<Reward | null> {
+    if (!this.dailyNext().canClaim) return null;
+    const base = this.config.economy.streakRewards[this.dailyNext().day - 1];
+    if (withAd && (!rewardHasCoins(base) || (await this.adMultiplier('daily')) === 0)) return null;
     const now = this.clock();
-    const gained = applyMultiplier(idleAccrued(this.state().lastIdleCollect, now, this.config), multiplier);
-    this.commit({ ...this.state(), coins: this.state().coins + gained, lastIdleCollect: now });
+    const claim = claimDaily(this.state().daily, this.dayOf(now), this.config);
+    if (!claim) return null;
+    const granted = withAd ? scaleReward(claim.reward, this.config.economy.adMultiplier) : claim.reward;
+    this.commit({ ...this.give(this.state(), granted), daily: claim.daily });
     this.nowMs.set(now);
-    return gained;
+    return granted;
   }
 
-  /** Claim the daily bonus, optionally multiplied by a rewarded ad. Returns coins gained. */
-  async claimDaily(withAd: boolean): Promise<number> {
-    if (!this.dailyNext().canClaim) return 0;
-    const multiplier = withAd ? await this.adMultiplier('daily') : 1;
-    if (multiplier === 0) return 0;
+  /** Claim a finished daily or weekly goal. Returns its reward, or null if it can't be claimed. */
+  claimGoal(id: string): Reward | null {
     const now = this.clock();
-    const claim = claimDaily(this.state().daily, localDayNumber(now, new Date(now).getTimezoneOffset()), this.config);
-    if (!claim) return 0;
-    const gained = applyMultiplier(claim.coins, multiplier);
-    this.commit({ ...this.state(), coins: this.state().coins + gained, daily: claim.daily });
-    this.nowMs.set(now);
-    return gained;
+    const day = this.dayOf(now);
+    const s = this.state();
+    const claim = claimGoal(rollGoals(s.goals, day, localWeekNumber(day), this.config), id, this.config);
+    if (!claim) return null;
+    this.commit({ ...this.give(s, claim.reward), goals: claim.state });
+    return claim.reward;
+  }
+
+  /** Claim a reached collection milestone. Luck rewards apply from then on. */
+  claimMilestone(count: number): Reward | null {
+    const s = this.state();
+    const claim = claimMilestone(this.ownedCount(), s.claimedMilestones, count, this.config);
+    if (!claim) return null;
+    this.commit({ ...this.give(s, claim.reward), claimedMilestones: claim.claimed });
+    return claim.reward;
+  }
+
+  /** Spend a spark to choose any gem. */
+  chooseSparkGem(gemId: string): SparkResult | null {
+    const gem = findGem(ROSTER, gemId);
+    const s = this.state();
+    if (!gem) return null;
+    const r = claimSpark(s.collection, s.sparkProgress, gem, this.config);
+    if (!r) return null;
+    this.commit({ ...s, collection: r.collection, sparkProgress: r.progress, shards: s.shards + r.shardsGained });
+    return { gem, outcome: r.outcome, level: r.level, shardsGained: r.shardsGained };
+  }
+
+  /** Buy a gem you have not found yet with shards. */
+  exchange(gemId: string): boolean {
+    const gem = findGem(ROSTER, gemId);
+    const s = this.state();
+    if (!gem) return false;
+    const r = exchangeGem(s.collection, s.shards, gem, this.config);
+    if (!r) return false;
+    this.commit({ ...s, collection: r.collection, shards: r.shards });
+    return true;
   }
 
   addToCrew(gemId: string): boolean {
@@ -251,8 +340,12 @@ export class GameStateService {
     }
   }
 
-  private addCoins(amount: number): void {
-    this.commit({ ...this.state(), coins: this.state().coins + amount });
+  private give(s: SaveData, r: Reward): SaveData {
+    return { ...s, coins: s.coins + (r.coins ?? 0), shards: s.shards + (r.shards ?? 0), tenTickets: s.tenTickets + (r.tenTickets ?? 0) };
+  }
+
+  private dayOf(ms: number): number {
+    return localDayNumber(ms, new Date(ms).getTimezoneOffset());
   }
 
   /** Store a change locally. `touch` stamps savedAt so cloud sync can tell which save is newest. */

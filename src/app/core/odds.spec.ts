@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GAME_CONFIG, RARITIES } from './config';
+import { GAME_CONFIG, RARITIES, Rarity } from './config';
 import { adjustedOdds, computeLuck } from './odds';
 
 const sum = (o: Record<string, number>) => Object.values(o).reduce((a, b) => a + b, 0);
@@ -8,10 +8,11 @@ describe('config', () => {
   it('base odds sum to 100', () => {
     expect(sum(GAME_CONFIG.baseOdds)).toBeCloseTo(100, 10);
   });
-  it('has a 7-day daily bonus that never shrinks', () => {
-    const d = GAME_CONFIG.economy.dailyBonus;
-    expect(d).toHaveLength(7);
-    expect(d).toEqual([...d].sort((a, b) => a - b));
+  it('has a 7-day streak whose coin rewards never shrink', () => {
+    const r = GAME_CONFIG.economy.streakRewards;
+    expect(r).toHaveLength(7);
+    const coins = r.map((x) => x.coins ?? 0).filter((c) => c > 0);
+    expect(coins).toEqual([...coins].sort((a, b) => a - b));
   });
   it('x10 is cheaper than 10 x x1', () => {
     expect(GAME_CONFIG.economy.crackCost1).toBe(100);
@@ -19,19 +20,30 @@ describe('config', () => {
   });
 });
 
+const lv = (rarity: Rarity, level = 1) => ({ rarity, level });
+
 describe('computeLuck', () => {
   it('is zero for an empty crew', () => {
     expect(computeLuck([])).toBe(0);
   });
   it('sums per-gem luck', () => {
     // 0.5% + 1% + 2% = 3.5%
-    expect(computeLuck(['amethyst', 'emerald', 'ruby'])).toBeCloseTo(0.035, 10);
+    expect(computeLuck([lv('amethyst'), lv('emerald'), lv('ruby')])).toBeCloseTo(0.035, 10);
   });
-  it('caps at +15%', () => {
-    expect(computeLuck(['diamond', 'diamond', 'diamond', 'diamond', 'diamond', 'diamond'])).toBe(0.15);
+  it('higher levels add luck (10% of base per level above 1)', () => {
+    expect(computeLuck([lv('amethyst', 5)])).toBeCloseTo(0.005 * 1.4, 10);
+    expect(computeLuck([lv('amethyst', 10)])).toBeCloseTo(0.005 * 1.9, 10);
+  });
+  it('adds permanent luck from collecting', () => {
+    expect(computeLuck([lv('amethyst')], GAME_CONFIG, 0.01)).toBeCloseTo(0.015, 10);
+    expect(computeLuck([], GAME_CONFIG, 0.01)).toBeCloseTo(0.01, 10);
+  });
+  it('caps the total at +15%', () => {
+    expect(computeLuck(Array(6).fill(lv('diamond')))).toBe(0.15);
+    expect(computeLuck([lv('diamond', 10)], GAME_CONFIG, 0.2)).toBe(0.15);
   });
   it('five max-luck gems exactly reach the cap', () => {
-    expect(computeLuck(Array(5).fill('diamond'))).toBe(0.15);
+    expect(computeLuck(Array(5).fill(lv('diamond')))).toBe(0.15);
   });
 });
 

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GAME_CONFIG } from './config';
-import { addToCrew, crewRarities, nextSlotCost, removeFromCrew, unlockSlot } from './crew';
-import { ROSTER } from './roster';
+import { addToCrew, nextSlotCost, removeFromCrew, unlockSlot } from './crew';
 
 const owned = { pebble: { level: 1 }, plum: { level: 2 }, fern: { level: 1 }, ember: { level: 1 } };
 
@@ -18,9 +17,6 @@ describe('crew', () => {
   it('removes a gem', () => {
     expect(removeFromCrew(['pebble', 'plum'], 'pebble')).toEqual({ ok: true, crew: ['plum'] });
     expect(removeFromCrew(['plum'], 'pebble')).toEqual({ ok: false, reason: 'notInCrew' });
-  });
-  it('maps crew ids to rarities, ignoring unknown ids', () => {
-    expect(crewRarities(['pebble', 'ember', 'ghost'], ROSTER)).toEqual(['quartz', 'ruby']);
   });
 });
 

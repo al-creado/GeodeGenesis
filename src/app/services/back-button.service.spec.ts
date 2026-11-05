@@ -39,7 +39,7 @@ describe('BackButtonService', () => {
   });
 
   it('closes the intro first', () => {
-    url = '/camp';
+    url = '/mine';
     const { svc, game } = setup();
     game.replayIntro();
     svc.handle();
@@ -53,11 +53,11 @@ describe('BackButtonService', () => {
     expect(navigate).toHaveBeenCalledWith(['/mine']);
   });
 
-  it('goes from a tab to Camp, then exits from Camp', () => {
+  it('goes from a tab to Mine, then exits from Mine', () => {
     url = '/vault';
     setup().svc.handle();
-    expect(navigate).toHaveBeenCalledWith(['/camp']);
-    url = '/camp';
+    expect(navigate).toHaveBeenCalledWith(['/mine']);
+    url = '/mine';
     setup().svc.handle();
     expect(exit).toHaveBeenCalledTimes(1);
   });

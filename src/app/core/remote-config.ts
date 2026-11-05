@@ -1,4 +1,4 @@
-import { GAME_CONFIG, GameConfig, RARITIES, Rarity } from './config';
+import { GAME_CONFIG, GameConfig, RARITIES, Rarity, Reward } from './config';
 
 export interface OverrideResult {
   readonly config: GameConfig;
@@ -15,8 +15,8 @@ const isInt = (v: unknown, min: number, max = 1_000_000_000): v is number => isN
 /**
  * Apply a Remote Config JSON override to a base config.
  *
- * Only economy tuning numbers can change. Ad unit ids, save version, level cap and
- * slot counts are never overridable. Each group is validated on its own: an invalid
+ * Only economy tuning numbers can change. Ad unit ids, save version, level cap, slot counts,
+ * goals, milestones, set bonuses and unlock rules are never overridable. Each group is validated on its own: an invalid
  * group is ignored and the rest still applies. Odds must still sum to 100.
  */
 export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideResult {
@@ -30,6 +30,7 @@ export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideRe
   let crew = base.crew;
   let pity = base.pity;
   let duplicates = base.duplicates;
+  let shop = base.shop;
 
   const group = (name: string, present: boolean, apply: () => boolean): void => {
     if (!present) return;
@@ -42,7 +43,7 @@ export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideRe
     const o = e as Record<string, unknown>;
     const next = { ...economy };
     const ints: [keyof typeof economy, number][] = [
-      ['startingCoins', 0], ['crackCost1', 1], ['crackCost10', 1], ['idleCoinsPerHour', 0], ['postCrackBonus', 0],
+      ['startingCoins', 0], ['crackCost1', 1], ['crackCost10', 1], ['postCrackBonus', 0],
     ];
     for (const [key, min] of ints) {
       if (key in o) {
@@ -50,18 +51,22 @@ export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideRe
         (next as Record<string, unknown>)[key] = o[key];
       }
     }
-    if ('idleCapHours' in o) {
-      if (!isNum(o['idleCapHours']) || o['idleCapHours'] <= 0 || o['idleCapHours'] > 72) return false;
-      next.idleCapHours = o['idleCapHours'];
-    }
     if ('adMultiplier' in o) {
       if (!isNum(o['adMultiplier']) || o['adMultiplier'] < 1 || o['adMultiplier'] > 10) return false;
       next.adMultiplier = o['adMultiplier'];
     }
-    if ('dailyBonus' in o) {
-      const d = o['dailyBonus'];
-      if (!Array.isArray(d) || d.length !== base.economy.dailyBonus.length || !d.every((x) => isInt(x, 0))) return false;
-      next.dailyBonus = d as number[];
+    if ('streakRewards' in o) {
+      const d = o['streakRewards'];
+      if (!Array.isArray(d) || d.length !== base.economy.streakRewards.length) return false;
+      const rewards: Reward[] = [];
+      for (const r of d) {
+        if (!isObject(r)) return false;
+        for (const k of Object.keys(r)) if (!['coins', 'shards', 'tenTickets'].includes(k)) return false; // never luck
+        for (const k of ['coins', 'shards']) if (k in r && !isInt(r[k], 0)) return false;
+        if ('tenTickets' in r && !isInt(r['tenTickets'], 0, 5)) return false;
+        rewards.push({ ...(r['coins'] !== undefined ? { coins: r['coins'] as number } : {}), ...(r['shards'] !== undefined ? { shards: r['shards'] as number } : {}), ...(r['tenTickets'] !== undefined ? { tenTickets: r['tenTickets'] as number } : {}) });
+      }
+      next.streakRewards = rewards;
     }
     economy = next;
     return true;
@@ -142,7 +147,29 @@ export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideRe
     return true;
   });
 
-  return { config: { ...base, economy, baseOdds, luckPerGem, crew, pity, duplicates }, applied, rejected };
+  const sh = raw['shop'];
+  group('shop', isObject(sh), () => {
+    const o = sh as Record<string, unknown>;
+    const next = { ...shop, exchangeShards: { ...shop.exchangeShards } as Record<Rarity, number> };
+    if ('sparkAt' in o) {
+      if (!isInt(o['sparkAt'], 1, 100_000)) return false;
+      next.sparkAt = o['sparkAt'];
+    }
+    if ('exchangeShards' in o) {
+      const ex = o['exchangeShards'];
+      if (!isObject(ex)) return false;
+      for (const r of RARITIES) {
+        if (r in ex) {
+          if (!isInt(ex[r], 1)) return false;
+          next.exchangeShards[r] = ex[r];
+        }
+      }
+    }
+    shop = next;
+    return true;
+  });
+
+  return { config: { ...base, economy, baseOdds, luckPerGem, crew, pity, duplicates, shop }, applied, rejected };
 }
 
 /** Parse the JSON string stored in the `economy_config` Remote Config parameter. */

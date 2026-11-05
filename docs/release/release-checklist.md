@@ -67,7 +67,8 @@ Enroll in **Play App Signing** when you create the app in Play Console (default 
 
 ## 7. Device test pass [verify]
 Run through this on a real phone with the release build (test ads on until the end):
-- [ ] Fresh install: starts on Camp, 300 coins, no crash, back button leaves the app.
+- [ ] Fresh install: starts on Mine with Daily, Vault and Crew locked, 300 coins, a free first pull, no crash, back button leaves the app.
+- [ ] Unlocks: Vault and Daily after the first pull, Crew after the first Emerald or better, shop and pity bars after 10 pulls. Locked tabs explain themselves.
 - [ ] Mine x1 and x10: coins, pity bars, NEW! tag, level-ups and shards behave.
 - [ ] Watch an ad to the end: coins x2 only after the ad finishes. Close an ad early: no reward.
 - [ ] Airplane mode: game starts and plays; ads simply fail with no reward and no freeze.
@@ -75,16 +76,17 @@ Run through this on a real phone with the release build (test ads on until the e
 - [ ] Cloud save: play, install on a second device, confirm progress arrives; confirm a fresh install does not wipe an existing cloud save.
 - [ ] Remote Config: change a value, relaunch twice (first launch caches, second applies), check Settings and Rates shows it.
 - [ ] Settings > Reset progress works; privacy policy link opens.
-- [ ] Android back button: closes the intro first; result screen goes to Mine; other tabs go to Camp; Camp exits the app; Settings returns to where you were.
+- [ ] Android back button: closes the intro first; result screen goes to Mine; other tabs go to Mine; Mine exits the app; the shop goes back to the Vault; Settings returns to where you were.
 - [ ] Screen edges: status bar and gesture/nav bar don't cover the top bar or tab bar on a phone with a notch and with 3-button navigation.
 - [ ] First launch shows the 3-step intro once; Settings > How to play replays it.
 - [ ] Settings > Cloud save > Delete my cloud data: Firestore document `saves/{uid}` disappears in the console, sync stays off after relaunch, "Turn cloud save back on" works.
 - [ ] Closing an ad early shows the "No reward" message.
-- [ ] Rotate and background/foreground: idle coins still correct.
+- [ ] Rotate and background/foreground; leave the app past midnight and check the free pull, calendar and goals reset.
+- [ ] Ten-pull: capsules show rarity colors, tap opens one, Open all opens the rest.
 - [ ] Switch `useTestAds` to false only for the final build, and confirm real ads load (as the owner, do not click them).
 
 ## 7b. Economy check (do before launch) [you]
-`npm run sim` plays hundreds of simulated players through the real game rules and prints how many days it takes to reach 6, 12, 18, 22 and 24 of the 24 gems. You can test numbers before publishing them: `npm run sim -- '<economy_config JSON>'` (same format as the Remote Config parameter). With the shipped numbers (idle 15/h, daily 10 to 75, bonus 3 per pull) the median player finishes all 24 gems in about 113 days with 1 visit a day and no ads, and about 22 days with 3 visits a day and ads. Retune through Remote Config if playtesting says it feels too slow or too fast.
+`npm run sim` plays hundreds of simulated players through the real game rules and prints how many days it takes to reach 6, 12, 18, 22 and 24 of the 24 gems for occasional, casual and daily players. You can test numbers before publishing them: `npm run sim -- '<economy_config JSON>'` (same format as the Remote Config parameter). With the shipped numbers (free daily pull, a forgiving login calendar of 100 to 250 coins and a day-7 free x10, daily and weekly goals, a spark every 150 pulls) the median player who logs in every day with ads finishes all 24 gems in about 28 days, one who logs in 3 days a week without ads in about 87 days, and one who logs in 2 days a week in about 131 days. Retune through Remote Config if playtesting says it feels too slow or too fast.
 
 ## 8. After the internal test
 Promote to closed/open testing or production when the checks pass. Keep the upload key, keystore passwords and Firebase/AdMob access safe.

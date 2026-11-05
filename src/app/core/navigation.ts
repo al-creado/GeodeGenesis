@@ -5,13 +5,14 @@ export type BackAction =
   | { readonly type: 'history' }
   | { readonly type: 'exit' };
 
-const TABS = ['/mine', '/vault', '/crew'];
+const TABS = ['/mine', '/vault', '/crew', '/daily'];
 
 export function decideBack(url: string, overlayOpen: boolean): BackAction {
   if (overlayOpen) return { type: 'closeOverlay' };
   const path = url.split(/[?#]/)[0].replace(/\/+$/, '') || '/';
   if (path === '/mine/result') return { type: 'navigate', to: '/mine' };
+  if (path === '/vault/shop') return { type: 'navigate', to: '/vault' };
   if (path === '/settings' || path === '/preview') return { type: 'history' };
-  if (TABS.includes(path)) return { type: 'navigate', to: '/camp' };
-  return { type: 'exit' }; // Camp (or unknown): leave the app
+  if (TABS.includes(path) && path !== '/mine') return { type: 'navigate', to: '/mine' };
+  return { type: 'exit' }; // Mine (the home tab) or unknown: leave the app
 }

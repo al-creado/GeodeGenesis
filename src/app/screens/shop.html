@@ -1,0 +1,59 @@
+<a class="back" routerLink="/vault">&larr; Vault</a>
+<h2 class="title">Shop</h2>
+
+<section class="card" aria-labelledby="spark-h">
+  <h2 id="spark-h">Spark</h2>
+  <div class="ring">
+    <svg viewBox="0 0 120 120" aria-hidden="true">
+      <circle cx="60" cy="60" r="50" fill="none" stroke="#1e130d" stroke-width="12" />
+      <circle cx="60" cy="60" r="50" fill="none" stroke="#f2b84b" stroke-width="12" stroke-linecap="round" [attr.stroke-dasharray]="sparkFraction() * circumference + ' ' + circumference" transform="rotate(-90 60 60)" />
+    </svg>
+    <div class="num" role="progressbar" aria-label="Spark progress" [attr.aria-valuenow]="game.sparkProgress()" aria-valuemin="0" [attr.aria-valuemax]="cfg.shop.sparkAt">
+      <b>{{ game.sparkProgress() }}</b><span>/{{ cfg.shop.sparkAt }}</span>
+    </div>
+  </div>
+  <p class="center">Every {{ cfg.shop.sparkAt }} pulls, pick <b class="gold">any gem</b> you want.</p>
+  <p class="muted small center">Extra progress carries over, and it never resets your pity. Free daily pulls and tickets count too.</p>
+  <button type="button" class="btn" [disabled]="!game.sparkIsReady()" (click)="picking.set(true)">
+    {{ game.sparkIsReady() ? 'Choose any gem' : cfg.shop.sparkAt - game.sparkProgress() + ' pulls to go' }}
+  </button>
+</section>
+
+<section class="card" aria-labelledby="ex-h">
+  <h2 id="ex-h">Exchange shards for a missing gem</h2>
+  <p class="muted small">You have <b class="gold">{{ game.shards() }}</b> shards. Shards come from duplicates of gems already at max level, and from goals and rewards.</p>
+  @if (missing().length === 0) {
+    <p class="muted">You have found every gem. Nothing left to buy!</p>
+  } @else {
+    <ul class="exl">
+      @for (m of missing(); track m.gem.id) {
+        <li class="ex">
+          <span class="th" aria-hidden="true">?</span>
+          <div><b>{{ m.gem.name }}</b><span class="muted small">{{ label[m.gem.rarity] }}</span></div>
+          <button type="button" class="btn small-btn" [disabled]="game.shards() < m.cost" (click)="buy(m.gem)">{{ m.cost }} shards</button>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+@if (picking()) {
+  <div class="backdrop" (click)="picking.set(false)">
+    <div class="picker" role="dialog" aria-modal="true" aria-label="Choose any gem" (click)="$event.stopPropagation()">
+      <h2>Choose any gem</h2>
+      <p class="muted small">Pick one. A gem you already own gains a level, or shards at max level.</p>
+      <ul class="pick">
+        @for (g of everyGem(); track g.gem.id) {
+          <li>
+            <button type="button" class="pk" (click)="choose(g.gem)">
+              <app-gem-art [gem]="g.gem" />
+              <span class="n">{{ g.gem.name }}</span>
+              <span class="muted lv">{{ g.owned ? 'Owned' : 'New!' }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+      <button type="button" class="btn btn-quiet" (click)="picking.set(false)">Cancel</button>
+    </div>
+  </div>
+}

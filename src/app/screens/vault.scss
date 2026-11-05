@@ -12,6 +12,7 @@
 
 .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .cell {
+  width: 100%; font: inherit; color: inherit;
   display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center;
   background: var(--card); border: 2px solid var(--card-border); border-radius: 14px; padding: 8px 4px 8px;
   app-gem-art { width: 100%; max-width: 96px; }
@@ -22,3 +23,20 @@
   border-style: dashed; justify-content: center; min-height: 128px;
   .q { font-size: 44px; font-weight: 800; color: var(--muted); line-height: 1; }
 }
+
+button.cell { cursor: pointer; }
+.shoplink { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 16px; min-height: 44px; border-radius: 999px; border: 2px solid var(--gold); background: var(--card); color: var(--text); text-decoration: none; font-weight: 800; font-size: 15px; }
+.track { height: 12px; border-radius: 6px; background: var(--nav); border: 2px solid var(--card-border); overflow: hidden; }
+.track i { display: block; height: 100%; background: var(--gold); }
+.ms { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.ms li { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.ms li.reached { color: var(--text); }
+.mc { font-weight: 800; }
+.done { color: #7fe3b4; font-weight: 800; }
+.claim { min-height: 34px; padding: 2px 12px; font-size: 14px; border-radius: 10px; }
+.sets { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.sets li { display: grid; grid-template-columns: 1fr 44px auto; align-items: center; gap: 8px; font-size: 15px; }
+.sn { display: inline-flex; align-items: center; gap: 8px; }
+.dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--ink); display: inline-block; }
+.sb { color: var(--muted); font-size: 13px; }
+.sb.on { color: var(--gold); font-weight: 800; }

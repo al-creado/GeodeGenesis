@@ -3,22 +3,24 @@
     <div class="box" role="dialog" aria-modal="true" aria-labelledby="intro-title">
       @switch (step()) {
         @case (0) {
-          <div class="art"><app-gem-art [gem]="pebble" [framed]="false" /></div>
+          <div class="art machine"><app-gold-machine [cost]="cfg.economy.crackCost1" /></div>
           <h2 id="intro-title">Welcome to Geode Genesis!</h2>
-          <p>Pebble mines coins for you, even while you are away (up to {{ cfg.economy.idleCapHours }} hours). Visit <strong>Camp</strong> to collect them and to claim your daily bonus.</p>
+          <p>A gold gem machine has appeared deep in the cave. Pull its lever in <strong>Mine</strong> to win cute gems. <strong>Your first pull is free.</strong></p>
         }
         @case (1) {
-          <div class="art machine"><app-gold-machine [cost]="cfg.economy.crackCost1" /></div>
-          <h2 id="intro-title">The Gold Gem Machine</h2>
-          <p>A gold machine has appeared in the cave. In <strong>Mine</strong>, pull the lever for {{ cfg.economy.crackCost1 }} coins, or ten pulls for {{ cfg.economy.crackCost10 }}. Gems come in five rarities, and every {{ cfg.pity.emeraldOrBetter }} pulls you are guaranteed an Emerald or better.</p>
+          <div class="art row">
+            <app-gem-art [gem]="pebble" class="small" />
+            <app-gem-art [gem]="ember" class="small" />
+          </div>
+          <h2 id="intro-title">Collect them all</h2>
+          <p>Gems come in five rarities, and every {{ cfg.pity.emeraldOrBetter }} pulls you are guaranteed an Emerald or better. Duplicates level a gem up. More tabs unlock as you play: a free pull every day, goals, and your Lucky Crew.</p>
         }
         @default {
           <div class="art row">
-            <app-gem-art [gem]="ember" class="small" />
             <app-gem-art [gem]="halo" class="small" />
           </div>
-          <h2 id="intro-title">Build your Lucky Crew</h2>
-          <p>Put gems from your <strong>Vault</strong> into the <strong>Crew</strong> tab for a little extra luck on every crack. Ads are optional and never change your pull odds.</p>
+          <h2 id="intro-title">Fair and cozy</h2>
+          <p>Full odds and pity rules are always in Settings. Pulls cost {{ cfg.economy.crackCost1 }} coins, or {{ cfg.economy.crackCost10 }} for ten. Ads are optional and never change your pull odds.</p>
         }
       }
       <div class="dots" aria-hidden="true">

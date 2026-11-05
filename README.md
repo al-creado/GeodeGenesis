@@ -5,13 +5,13 @@ A cozy mobile gacha sim for Android. Earn coins, crack geodes, collect cute gem 
 Tech: Angular (standalone components, signals, strict TypeScript) + Capacitor (Android). Ads via `@capacitor-community/admob` (Google TEST ad unit IDs only). Persistence: localStorage behind a `SaveService` interface; Firebase (anonymous auth, Firestore, Remote Config) in Stage 5.
 
 ## Core loop
-Coins come from idle income, a daily bonus, and optional rewarded ads. Coins buy geode cracks, which give gem characters of different rarities. Gems in the Lucky Crew add small luck. Ads give x2 on the daily bonus, idle collection, and a post-crack coin bonus.
+A pure gacha loop: pull the lever of the gold gem machine, collect gem characters of five rarities, and level them with duplicates. Coins come from the login calendar, daily and weekly goals, collection rewards and optional rewarded ads (x2 on the calendar coins and the post-pull bonus). Luck from the Lucky Crew, completed sets and collection rewards slightly improves odds. The first pull is free, and so is one pull a day.
 
 ## Currency
 - **Coins**: main currency (never called "gems").
 - **Shards**: earned when a duplicate drops at max level.
-- Crack x1 = 100 coins, x10 = 900 coins. Idle coins accrue while away, capped at 8 hours.
-- 7-day daily bonus (10/15/20/30/40/50/75 coins; the spec's "day 4 = 60" was a sample value and was rebalanced after the economy simulation).
+- Pull x1 = 100 coins, x10 = 900 coins. There is no idle income: coins and free x10 tickets come from the daily rhythm.
+- Login calendar (forgiving, never resets): 100/100/150/150/200/250 coins, then a free x10 ticket on day 7. Daily goals (pull 10 times, find an Amethyst or better) and a weekly goal (pull 70 times) pay coins, shards and a free x10 ticket.
 
 ## Rarity
 | Rarity | Odds | Luck per crew gem | Gems |
@@ -38,17 +38,18 @@ Gems are SVG generated in code by a `GemArt` component seeded by gem id. Shapes:
 Background #2A1C14, cards #3E2A1E with #5C402D borders, nav bar #1E130D, stalactites #1C120C along the top of every screen. Text #F6E7D0, muted #CDB397. Primary buttons gold #F2B84B (dark text #24160F), ad buttons amber #E8833A (dark text). Font Nunito 700/800.
 
 ## Screens (bottom tabs)
-1. **Camp**: idle counter with Pebble mascot, Collect / Watch ad to collect x2, 7-day daily bonus row.
-2. **Mine**: a gold lottery machine that has appeared in the cave (pull its lever, or use Mine x1 / x10; same odds, costs and pity as before), odds list, crew luck chip, pity bars, rates link, and a result screen where the lever is pulled, a capsule drops and pops open.
-3. **Vault**: rarity filter chips, 3-column grid, locked "?" cells, count like 7/24.
-4. **Crew**: slots, luck meter with cap, before/after Ruby odds, tap-to-add owned gems.
+New players see only **Mine**; the other tabs unlock as they play (Vault and Daily after the first pull, Crew after the first Emerald or better, the Shop and pity bars after 10 pulls). Locked tabs explain how to unlock them.
+1. **Daily**: free daily pull, forgiving login calendar (Watch ad for x2 coins), daily and weekly goals.
+2. **Mine**: the gold lottery machine in the cave (pull its lever, or use Mine x1 / x10 / a free x10 ticket). The first pull is free. Odds list, total-luck chip, pity bars and the rates link. The result screen pulls the lever, drops a capsule colored by rarity and pops it open; ten-pulls show ten capsules to tap open or open all.
+3. **Vault**: collection rewards (6/12/18/24 gems), set bonuses, rarity filters, 3-column grid with "?" cells. Tap a gem for its profile: story, level, crew luck. Links to the **Shop**: a spark every 150 pulls (choose any gem) and shards for buying gems you have not found.
+4. **Crew**: slots, total luck with its sources (crew, sets, collection rewards), before/after Ruby odds, tap-to-add owned gems.
 Plus Settings/Rates sub-screen.
 
 ## Layout
 ```
 src/app/core/      pure TypeScript game logic (no Angular imports) + unit tests
 src/app/services/  GameStateService, PullService, AdService, SaveService
-src/app/screens/   Camp, Mine, Vault, Crew, Settings/Rates
+src/app/screens/   Daily, Mine, Vault (+ Shop), Crew, Settings/Rates
 src/app/ui/        shared components (GemArt, frames, stalactites)
 ```
 All numbers live in `src/app/core/config.ts`. See `CLAUDE.md` for the architecture rules.
@@ -74,7 +75,7 @@ npm run android:debug    # build a debug APK: android/app/build/outputs/apk/debu
 Ads: in the browser the Simulated dialog is used; in the Android app `AdMobAdService` is used with **Google test ids only** (see `GAME_CONFIG.ads.admob` and `strings.xml`). Real ids are a Stage 6 task.
 
 ## Economy playtest
-`npm run sim` simulates players (casual, regular, dedicated) and prints the median day each collection milestone is reached. Try new numbers before setting them in Remote Config: `npm run sim -- '{"economy":{"idleCoinsPerHour":15}}'`.
+`npm run sim` simulates players (occasional, casual, daily) and prints the median day each collection milestone is reached. Try new numbers before setting them in Remote Config: `npm run sim -- '{"shop":{"sparkAt":200}}'`.
 
 ## Development
 Requires Node >= 22.22.3 or 24 (Angular CLI requirement).

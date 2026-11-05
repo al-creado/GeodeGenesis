@@ -10,7 +10,10 @@ describe('createNewSave', () => {
     expect(s.version).toBe(GAME_CONFIG.saveVersion);
     expect(s.coins).toBe(GAME_CONFIG.economy.startingCoins);
     expect(s.crewSlots).toBe(GAME_CONFIG.crew.startSlots);
-    expect(s.lastIdleCollect).toBe(NOW);
+    expect(s.tenTickets).toBe(0);
+    expect(s.freePullDay).toBeNull();
+    expect(s.sparkProgress).toBe(0);
+    expect(s.claimedMilestones).toEqual([]);
   });
 });
 

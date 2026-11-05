@@ -1,0 +1,56 @@
+<section class="card" aria-labelledby="free-h">
+  <h2 id="free-h">Free daily pull</h2>
+  @if (game.freePullReady()) {
+    <p class="muted small">One free pull every day. Same odds as every other pull.</p>
+    <button type="button" class="btn glow" (click)="freePull()">Pull for free</button>
+  } @else {
+    <p class="muted small">You used today's free pull. A new one is ready tomorrow.</p>
+    <button type="button" class="btn" disabled>Free pull used</button>
+  }
+</section>
+
+<section class="card" aria-labelledby="cal-h">
+  <h2 id="cal-h">Login calendar</h2>
+  <ol class="days">
+    @for (d of game.dailyRow(); track d.day) {
+      <li [class]="'day ' + d.state">
+        <span class="n">Day {{ d.day }}</span>
+        <span class="c">{{ short(d.reward) }}</span>
+        @if (d.state === 'claimed') { <span class="tick" aria-label="claimed">&#10003;</span> }
+      </li>
+    }
+  </ol>
+  @if (game.dailyNext().canClaim) {
+    <div class="btn-row">
+      <button type="button" class="btn" (click)="claim(false)">Claim day {{ game.dailyNext().day }}: {{ describe(nextReward()) }}</button>
+      @if (game.adsAvailable() && canDouble()) {
+        <button type="button" class="btn btn-ad" [disabled]="game.adBusy()" (click)="claim(true)">
+          Watch ad to double the coins ({{ doubled().coins }})
+        </button>
+      }
+    </div>
+    @if (game.adsAvailable() && canDouble()) { <app-ad-note /> }
+  } @else {
+    <p class="muted small center">Claimed for today. Come back tomorrow for day {{ game.dailyNext().day }}. Missing a day never resets the calendar.</p>
+  }
+</section>
+
+<section class="card" aria-labelledby="goals-h">
+  <h2 id="goals-h">Goals</h2>
+  @for (g of game.goals(); track g.def.id) {
+    <div class="goal">
+      <div class="gt"><span>{{ g.def.label }}</span><b>{{ g.progress }}/{{ g.def.target }}</b></div>
+      <div class="bar" role="progressbar" [attr.aria-label]="g.def.label" [attr.aria-valuenow]="g.progress" aria-valuemin="0" [attr.aria-valuemax]="g.def.target">
+        <i [style.width.%]="(g.progress / g.def.target) * 100"></i>
+      </div>
+      <div class="gr">
+        <span class="muted small">Reward: {{ describe(g.def.reward) }}</span>
+        @if (g.claimed) {
+          <span class="done small">Claimed</span>
+        } @else if (g.done) {
+          <button type="button" class="btn small-btn" (click)="claimGoal(g.def.id)">Claim</button>
+        }
+      </div>
+    </div>
+  }
+</section>

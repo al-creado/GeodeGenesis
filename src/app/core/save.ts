@@ -1,5 +1,6 @@
 import { GAME_CONFIG, GameConfig } from './config';
 import { DailyState, INITIAL_DAILY } from './economy';
+import { GoalState, INITIAL_GOALS } from './goals';
 import { Collection, INITIAL_PITY, PityState } from './pull';
 import { findGem, ROSTER } from './roster';
 
@@ -8,12 +9,20 @@ export interface SaveData {
   readonly version: number;
   readonly coins: number;
   readonly shards: number;
+  /** Free x10 pull tickets (from streak and weekly goal rewards). */
+  readonly tenTickets: number;
   readonly collection: Collection;
   readonly pity: PityState;
   readonly crew: readonly string[];
   readonly crewSlots: number;
-  readonly lastIdleCollect: number;
   readonly daily: DailyState;
+  /** Local day number of the last free daily pull, or null. */
+  readonly freePullDay: number | null;
+  readonly goals: GoalState;
+  /** Collection milestones (by gem count) whose reward was claimed. */
+  readonly claimedMilestones: readonly number[];
+  /** Pulls toward the next spark (pick any gem). */
+  readonly sparkProgress: number;
   readonly totalCracks: number;
   readonly settings: {
     readonly adsEnabled: boolean;
@@ -31,12 +40,16 @@ export function createNewSave(nowMs: number, config: GameConfig = GAME_CONFIG): 
     version: config.saveVersion,
     coins: config.economy.startingCoins,
     shards: 0,
+    tenTickets: 0,
     collection: {},
     pity: INITIAL_PITY,
     crew: [],
     crewSlots: config.crew.startSlots,
-    lastIdleCollect: nowMs,
     daily: INITIAL_DAILY,
+    freePullDay: null,
+    goals: INITIAL_GOALS,
+    claimedMilestones: [],
+    sparkProgress: 0,
     totalCracks: 0,
     settings: { adsEnabled: true, introSeen: false, cloudSave: true },
     savedAt: 0,
@@ -55,6 +68,21 @@ const MIGRATIONS: Readonly<Record<number, (old: Record<string, unknown>) => Reco
     const collection = isObject(old['collection']) ? old['collection'] : {};
     const hasProgress = (typeof old['totalCracks'] === 'number' && old['totalCracks'] > 0) || Object.keys(collection).length > 0;
     return { ...old, version: 3, settings: { ...settings, introSeen: hasProgress, cloudSave: true } };
+  },
+  // v3 -> v4: pure gacha rework. Idle income is gone; goals, tickets, milestones and spark are new.
+  // Pulls already made count toward the first spark.
+  3: (old) => {
+    const { lastIdleCollect: _dropped, ...rest } = old;
+    void _dropped;
+    return {
+      ...rest,
+      version: 4,
+      tenTickets: 0,
+      freePullDay: null,
+      goals: INITIAL_GOALS,
+      claimedMilestones: [],
+      sparkProgress: typeof old['totalCracks'] === 'number' ? old['totalCracks'] : 0,
+    };
   },
 };
 
@@ -91,6 +119,7 @@ export function migrateSave(raw: unknown, nowMs: number, config: GameConfig = GA
   const crew = [...new Set(crewRaw.filter((id): id is string => typeof id === 'string' && !!collection[id]))].slice(0, crewSlots);
   const pity = isObject(data['pity']) ? data['pity'] : {};
   const daily = isObject(data['daily']) ? data['daily'] : {};
+  const goals = isObject(data['goals']) ? data['goals'] : {};
   const settings = isObject(data['settings']) ? data['settings'] : {};
   const lastClaim = daily['lastClaimDay'];
 
@@ -98,6 +127,7 @@ export function migrateSave(raw: unknown, nowMs: number, config: GameConfig = GA
     version: config.saveVersion,
     coins: int(data['coins'], fresh.coins),
     shards: int(data['shards'], 0),
+    tenTickets: int(data['tenTickets'], 0, 0, 1000),
     collection,
     pity: {
       sinceEmerald: int(pity['sinceEmerald'], 0, 0, config.pity.emeraldOrBetter - 1),
@@ -105,11 +135,23 @@ export function migrateSave(raw: unknown, nowMs: number, config: GameConfig = GA
     },
     crew,
     crewSlots,
-    lastIdleCollect: int(data['lastIdleCollect'], nowMs),
     daily: {
-      claimedDay: int(daily['claimedDay'], 0, 0, config.economy.dailyBonus.length),
+      claimedDay: int(daily['claimedDay'], 0, 0, config.economy.streakRewards.length),
       lastClaimDay: typeof lastClaim === 'number' && Number.isFinite(lastClaim) ? Math.floor(lastClaim) : null,
     },
+    freePullDay: typeof data['freePullDay'] === 'number' && Number.isFinite(data['freePullDay']) ? Math.floor(data['freePullDay']) : null,
+    goals: {
+      day: int(goals['day'], -1, -1),
+      week: int(goals['week'], -1, -1),
+      dailyPulls: int(goals['dailyPulls'], 0),
+      dailyRare: int(goals['dailyRare'], 0),
+      weeklyPulls: int(goals['weeklyPulls'], 0),
+      claimed: Array.isArray(goals['claimed']) ? [...new Set(goals['claimed'].filter((id): id is string => typeof id === 'string'))] : [],
+    },
+    claimedMilestones: Array.isArray(data['claimedMilestones'])
+      ? [...new Set(data['claimedMilestones'].filter((n): n is number => config.progression.milestones.some((m) => m.count === n)))]
+      : [],
+    sparkProgress: int(data['sparkProgress'], 0),
     totalCracks: int(data['totalCracks'], 0),
     settings: {
       adsEnabled: typeof settings['adsEnabled'] === 'boolean' ? settings['adsEnabled'] : true,

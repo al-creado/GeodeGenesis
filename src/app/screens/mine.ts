@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { RARITIES } from '../core/config';
-import { GameStateService, CrackCount } from '../services/game-state.service';
+import { CrackCount, GameStateService, PullSource } from '../services/game-state.service';
 import { GoldMachine } from '../ui/gold-machine';
 import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
 
@@ -35,7 +35,7 @@ export class Mine {
     ].map((r) => ({ ...r, next: r.count + 1 >= r.limit }));
   });
 
-  protected crack(count: CrackCount): void {
-    if (this.game.crack(count)) void this.router.navigate(['/mine/result']);
+  protected crack(count: CrackCount, source: PullSource = 'coins'): void {
+    if (this.game.crack(count, source)) void this.router.navigate(['/mine/result']);
   }
 }

@@ -1,4 +1,6 @@
 import { GAME_CONFIG, GameConfig, RARITIES, Rarity } from './config';
+import type { CrewMember } from './progression';
+import { gemLuck } from './progression';
 
 export type OddsTable = Record<Rarity, number>;
 
@@ -11,9 +13,16 @@ export function isAtLeast(rarity: Rarity, min: Rarity): boolean {
   return rarityRank(rarity) >= rarityRank(min);
 }
 
-/** Total crew luck as a fraction, summed per gem and capped. */
-export function computeLuck(crew: readonly Rarity[], config: GameConfig = GAME_CONFIG): number {
-  const sum = crew.reduce((acc, r) => acc + config.luckPerGem[r], 0);
+/**
+ * Total luck as a fraction, capped. It is the sum of each crew gem's luck (higher levels add more)
+ * plus any permanent luck from collecting (completed sets and claimed milestones).
+ */
+export function computeLuck(
+  crew: readonly CrewMember[],
+  config: GameConfig = GAME_CONFIG,
+  permanent = 0,
+): number {
+  const sum = crew.reduce((acc, m) => acc + gemLuck(m.rarity, m.level, config), permanent);
   return Math.min(sum, config.crew.luckCap);
 }
 

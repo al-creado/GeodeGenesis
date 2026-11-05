@@ -1,12 +1,16 @@
 @if (batch(); as b) {
   @if (!revealed()) {
     <section class="stage" (click)="skip()" (keydown.enter)="skip()" tabindex="0" role="button" aria-label="Pulling the lever. Tap to skip.">
-      <div class="machine"><app-gold-machine [state]="machine()" [cost]="againCost()" /></div>
+      <div class="machine"><app-gold-machine [state]="machine()" [cost]="plateCost" /></div>
       <p class="muted">Pulling the lever&hellip; (tap to skip)</p>
     </section>
   } @else {
     <div class="revealed" role="region" aria-live="polite" aria-label="Mining result">
-      <div class="machine small-machine"><app-gold-machine state="open" [glow]="glow()" [cost]="againCost()" /></div>
+      <div class="machine small-machine"><app-gold-machine state="open" [glow]="glow()" [cost]="plateCost" /></div>
+
+      @for (note of unlockNotes(); track note) {
+        <p class="unlock" role="status">{{ note }}</p>
+      }
 
       @if (single(); as r) {
         <article class="card gem-card" [class]="'card gem-card r-' + r.gem.rarity">
@@ -27,27 +31,42 @@
         </article>
       } @else {
         <section class="card">
-          <h2>{{ b.results.length }} gems!</h2>
+          <h2>{{ b.results.length }} capsules!</h2>
           <p class="muted small">
-            {{ newCount() }} new
-            @if (shardTotal() > 0) { &middot; +{{ shardTotal() }} shards }
-            @if (pityHit()) { &middot; pity guarantee kicked in }
+            @if (allOpened()) {
+              {{ newCount() }} new
+              @if (shardTotal() > 0) { &middot; +{{ shardTotal() }} shards }
+              @if (pityHit()) { &middot; pity guarantee kicked in }
+            } @else {
+              The capsule color shows the rarity. Tap one to open it, or open them all.
+            }
           </p>
           <ul class="grid">
             @for (r of b.results; track $index) {
-              <li class="mini">
-                @if (r.outcome === 'new') { <span class="tag tag-mini">NEW!</span> }
-                <app-gem-art [gem]="r.gem" />
-                <span class="n">{{ r.gem.name }}</span>
-                <span class="muted lv">
-                  @if (r.outcome === 'shards') { +{{ r.shardsGained }} shards } @else { Lv {{ r.level }} }
-                </span>
-              </li>
+              @if (opened().has($index)) {
+                <li class="mini">
+                  @if (r.outcome === 'new') { <span class="tag tag-mini">NEW!</span> }
+                  <app-gem-art [gem]="r.gem" />
+                  <span class="n">{{ r.gem.name }}</span>
+                  <span class="muted lv">
+                    @if (r.outcome === 'shards') { +{{ r.shardsGained }} shards } @else { Lv {{ r.level }} }
+                  </span>
+                </li>
+              } @else {
+                <li class="mini">
+                  <button type="button" class="capsule" [class]="'capsule c-' + r.gem.rarity" [style.background]="capsuleColor[r.gem.rarity]" [attr.aria-label]="'Closed ' + label[r.gem.rarity] + ' capsule. Tap to open.'" (click)="open($index)"></button>
+                  <span class="muted lv">{{ label[r.gem.rarity] }}</span>
+                </li>
+              }
             }
           </ul>
+          @if (!allOpened()) {
+            <button type="button" class="btn btn-block open-all" (click)="openAll()">Open all</button>
+          }
         </section>
       }
 
+      @if (b.bonus > 0) {
       <section class="card bonus">
         <h2>Bonus coins +{{ b.bonus }}</h2>
         @if (b.bonusBoosted) {
@@ -61,6 +80,7 @@
           <p class="muted small">Added to your coins.</p>
         }
       </section>
+      }
 
       <div class="btn-row">
         <button type="button" class="btn" [disabled]="!canAgain()" (click)="again()">

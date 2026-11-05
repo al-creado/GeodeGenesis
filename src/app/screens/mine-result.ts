@@ -6,7 +6,7 @@ import { CrackResult } from '../core/pull';
 import { CrackCount, GameStateService } from '../services/game-state.service';
 import { ToastService } from '../services/toast.service';
 import { AdNote } from '../ui/ad-note';
-import { luckPct, RARITY_LABEL } from '../ui/format';
+import { CAPSULE_COLOR, luckPct, RARITY_LABEL } from '../ui/format';
 import { GemArt } from '../ui/gem-art';
 import { GoldMachine, MachineState } from '../ui/gold-machine';
 import { ART } from '../core/gem-art';
@@ -36,12 +36,27 @@ export class MineResult implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly cfg = this.game.config;
+  protected readonly plateCost = this.cfg.economy.crackCost1;
   protected readonly label = RARITY_LABEL;
   protected readonly luckPct = luckPct;
   protected readonly revealed = signal(false);
   protected readonly phase = signal<'pull' | 'drop'>('pull');
   protected readonly machine = computed<MachineState>(() => (this.revealed() ? 'open' : this.phase() === 'pull' ? 'pulling' : 'dropping'));
   protected readonly batch = this.game.lastBatch;
+  protected readonly capsuleColor = CAPSULE_COLOR;
+  /** Indexes of the capsules already opened (ten-pulls). */
+  protected readonly opened = signal<ReadonlySet<number>>(new Set());
+  protected readonly allOpened = computed(() => this.opened().size >= (this.batch()?.results.length ?? 0));
+  protected readonly unlockNotes = computed(() => {
+    const names: Record<string, string> = {
+      vault: 'The Vault is unlocked. Your gems live there.',
+      daily: 'Daily is unlocked: a free pull, a login calendar and goals.',
+      crew: 'Crew is unlocked! Gems in your crew add luck to every pull.',
+      shop: 'The Shop is unlocked in the Vault: spark and shard exchange.',
+      pity: 'Pity progress is now shown on the Mine screen.',
+    };
+    return (this.batch()?.unlocked ?? []).map((k) => names[k]);
+  });
 
   /** Best rarity in the batch decides the glow color. */
   protected readonly best = computed<Rarity>(() => {
@@ -74,9 +89,30 @@ export class MineResult implements OnInit {
     this.revealed.set(true);
   }
 
+  protected open(i: number): void {
+    this.opened.update((s) => new Set(s).add(i));
+  }
+
+  /** Open every remaining capsule, a few at a time so each pop is seen. */
+  protected openAll(): void {
+    const total = this.batch()?.results.length ?? 0;
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let i = 0;
+    const step = (): void => {
+      while (i < total && this.opened().has(i)) i++;
+      if (i >= total) return;
+      this.open(i);
+      if (reduce) step();
+      else this.timer = setTimeout(step, 110);
+    };
+    this.clearTimer();
+    step();
+  }
+
   protected again(): void {
     const b = this.batch();
     if (!b || !this.game.crack(b.count)) return;
+    this.opened.set(new Set());
     this.startReveal();
   }
 
@@ -102,6 +138,7 @@ export class MineResult implements OnInit {
       return;
     }
     this.revealed.set(false);
+    this.opened.set(new Set());
     this.phase.set('pull');
     this.timer = setTimeout(() => {
       this.phase.set('drop');

@@ -18,19 +18,28 @@ describe('simulatePlayer', () => {
     expect(r.totalCracks).toBeGreaterThan(0);
   });
 
-  it('more engaged players progress at least as fast, on average', () => {
-    const avg = (p: (typeof PROFILES)[number]) => {
-      let sum = 0;
-      for (let s = 1; s <= 20; s++) sum += simulatePlayer(p, 60, s).ownedAtEnd;
-      return sum / 20;
+  it('pays for what it spends: with no income only the free pulls and starting coins are used', () => {
+    const none = { reward: {} };
+    const poor = {
+      ...GAME_CONFIG,
+      economy: { ...GAME_CONFIG.economy, postCrackBonus: 0, streakRewards: Array(7).fill(none.reward) },
+      goals: { ...GAME_CONFIG.goals, daily: [], weekly: [] },
+      progression: { ...GAME_CONFIG.progression, milestones: [] },
+      shop: { ...GAME_CONFIG.shop, sparkAt: 1_000_000 },
     };
-    expect(avg(PROFILES[0])).toBeLessThan(avg(PROFILES[1]));
-    expect(avg(PROFILES[1])).toBeLessThanOrEqual(avg(PROFILES[2]));
+    const r = simulatePlayer(PROFILES[2], 1, 1, poor);
+    // day 1: the free daily pull, then 300 coins = 3 single pulls (the first pull is the free one)
+    expect(r.totalCracks).toBe(1 + 3);
   });
 
-  it('pays for what it spends: a poorer config yields fewer cracks', () => {
-    const poor = { ...GAME_CONFIG, economy: { ...GAME_CONFIG.economy, idleCoinsPerHour: 0, dailyBonus: [0, 0, 0, 0, 0, 0, 0], postCrackBonus: 0 } };
-    expect(simulatePlayer(PROFILES[0], 30, 1, poor).totalCracks).toBe(3); // only the 300 starting coins
+  it('a daily player with ads out-collects a casual player', () => {
+    const avg = (i: number) => {
+      let sum = 0;
+      for (let s = 1; s <= 20; s++) sum += simulatePlayer(PROFILES[i], 40, s).ownedAtEnd;
+      return sum / 20;
+    };
+    expect(avg(2)).toBeGreaterThan(avg(1));
+    expect(avg(1)).toBeGreaterThan(avg(0));
   });
 
   it('medianDay ignores never-reached results', () => {

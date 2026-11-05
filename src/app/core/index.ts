@@ -10,3 +10,7 @@ export * from './crew';
 export * from './save';
 export * from './cloud-sync';
 export * from './remote-config';
+export * from './goals';
+export * from './progression';
+export * from './shop';
+export * from './unlocks';

@@ -6,7 +6,7 @@ import { Capacitor } from '@capacitor/core';
 import { decideBack } from '../core/navigation';
 import { GameStateService } from './game-state.service';
 
-/** Leaves the app (Android back button on the Camp tab). Replaceable in tests. */
+/** Leaves the app (Android back button on the Mine tab). Replaceable in tests. */
 export const APP_EXIT = new InjectionToken<() => void>('AppExit', {
   providedIn: 'root',
   factory: () => () => void App.exitApp(),

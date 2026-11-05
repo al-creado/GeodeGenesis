@@ -60,7 +60,7 @@ describe('AdMobAdService', () => {
     const real = { ...GAME_CONFIG, ads: { ...GAME_CONFIG.ads, admob: { ...GAME_CONFIG.ads.admob, rewardedUnitId: 'ca-app-pub-1111111111111111/2222222222', useTestAds: false } } };
     const live = new AdMobAdService(real, plugin);
     plugin.onShow = async () => { plugin.emit(ADMOB_EVENTS.rewarded); plugin.emit(ADMOB_EVENTS.dismissed); return {}; };
-    await live.showRewarded('idle');
+    await live.showRewarded('daily');
     expect(plugin.prepareCalls[0]).toEqual({ adId: 'ca-app-pub-1111111111111111/2222222222', isTesting: false });
   });
 
@@ -68,7 +68,7 @@ describe('AdMobAdService', () => {
     expect(GAME_CONFIG.ads.admob.appId.startsWith('ca-app-pub-3940256099942544~')).toBe(true);
     expect(GAME_CONFIG.ads.admob.rewardedUnitId.startsWith('ca-app-pub-3940256099942544/')).toBe(true);
     plugin.onShow = async () => { plugin.emit(ADMOB_EVENTS.rewarded); plugin.emit(ADMOB_EVENTS.dismissed); return {}; };
-    await svc.showRewarded('idle');
+    await svc.showRewarded('daily');
     expect(plugin.prepareCalls[0]).toEqual({ adId: GAME_CONFIG.ads.admob.rewardedUnitId, isTesting: true });
   });
 
@@ -86,7 +86,7 @@ describe('AdMobAdService', () => {
       plugin.emit(ADMOB_EVENTS.dismissed);
       return new Promise(() => undefined);
     };
-    expect(await svc.showRewarded('idle')).toBe(false);
+    expect(await svc.showRewarded('daily')).toBe(false);
   });
 
   it('does not reward when the ad fails to show', async () => {
@@ -94,26 +94,26 @@ describe('AdMobAdService', () => {
       plugin.emit(ADMOB_EVENTS.failedToShow);
       return new Promise(() => undefined);
     };
-    expect(await svc.showRewarded('idle')).toBe(false);
+    expect(await svc.showRewarded('daily')).toBe(false);
   });
 
   it('does not reward when show() rejects', async () => {
     plugin.onShow = () => Promise.reject(new Error('boom'));
-    expect(await svc.showRewarded('idle')).toBe(false);
+    expect(await svc.showRewarded('daily')).toBe(false);
   });
 
   it('does not reward when the ad fails to load, and retries next time', async () => {
     plugin.prepareError = new Error('no fill');
-    expect(await svc.showRewarded('idle')).toBe(false);
+    expect(await svc.showRewarded('daily')).toBe(false);
     plugin.prepareError = null;
     plugin.onShow = async () => { plugin.emit(ADMOB_EVENTS.rewarded); plugin.emit(ADMOB_EVENTS.dismissed); return {}; };
-    expect(await svc.showRewarded('idle')).toBe(true);
+    expect(await svc.showRewarded('daily')).toBe(true);
   });
 
   it('gives up if the ad takes too long to load', async () => {
     vi.useFakeTimers();
     plugin.prepareDelayMs = GAME_CONFIG.ads.loadTimeoutMs * 2;
-    const p = svc.showRewarded('idle');
+    const p = svc.showRewarded('daily');
     await vi.advanceTimersByTimeAsync(GAME_CONFIG.ads.loadTimeoutMs + 100);
     expect(await p).toBe(false);
     await vi.advanceTimersByTimeAsync(GAME_CONFIG.ads.loadTimeoutMs * 2);
@@ -121,7 +121,7 @@ describe('AdMobAdService', () => {
 
   it('removes its listeners after each ad and preloads the next one', async () => {
     plugin.onShow = async () => { plugin.emit(ADMOB_EVENTS.rewarded); plugin.emit(ADMOB_EVENTS.dismissed); return {}; };
-    await svc.showRewarded('idle');
+    await svc.showRewarded('daily');
     await new Promise((r) => setTimeout(r, 0));
     expect(plugin.count(ADMOB_EVENTS.rewarded)).toBe(0);
     expect(plugin.count(ADMOB_EVENTS.dismissed)).toBe(0);
@@ -135,7 +135,7 @@ describe('AdMobAdService', () => {
 
     it('does not show a form where consent is not required', async () => {
       rewardedOnShow();
-      expect(await svc.showRewarded('idle')).toBe(true);
+      expect(await svc.showRewarded('daily')).toBe(true);
       expect(plugin.formShown).toBe(0);
     });
 
@@ -143,16 +143,16 @@ describe('AdMobAdService', () => {
       plugin.consent = { ...plugin.consent, status: 'REQUIRED', isConsentFormAvailable: true, canRequestAds: false, privacyOptionsRequirementStatus: 'REQUIRED' };
       plugin.afterForm = { ...plugin.consent, status: 'OBTAINED', canRequestAds: true };
       rewardedOnShow();
-      expect(await svc.showRewarded('idle')).toBe(true);
+      expect(await svc.showRewarded('daily')).toBe(true);
       expect(plugin.formShown).toBe(1);
     });
 
     it('requests no ad when consent is declined, and asks again next time', async () => {
       plugin.consent = { ...plugin.consent, status: 'REQUIRED', isConsentFormAvailable: true, canRequestAds: false };
       plugin.afterForm = { ...plugin.consent, status: 'REQUIRED', canRequestAds: false };
-      expect(await svc.showRewarded('idle')).toBe(false);
+      expect(await svc.showRewarded('daily')).toBe(false);
       expect(plugin.prepareCalls).toHaveLength(0);
-      await svc.showRewarded('idle');
+      await svc.showRewarded('daily');
       expect(plugin.formShown).toBe(2); // declined, so it asks again
     });
 
@@ -160,7 +160,7 @@ describe('AdMobAdService', () => {
       expect(svc.privacyOptionsRequired()).toBe(false);
       plugin.consent = { ...plugin.consent, privacyOptionsRequirementStatus: 'REQUIRED' };
       rewardedOnShow();
-      await svc.showRewarded('idle');
+      await svc.showRewarded('daily');
       expect(svc.privacyOptionsRequired()).toBe(true);
       await svc.showPrivacyOptions();
       expect(plugin.privacyFormShown).toBe(1);
@@ -170,7 +170,7 @@ describe('AdMobAdService', () => {
   it('shows one ad at a time', async () => {
     let release: () => void = () => undefined;
     plugin.onShow = () => new Promise<void>((r) => (release = r));
-    const first = svc.showRewarded('idle');
+    const first = svc.showRewarded('daily');
     await new Promise((r) => setTimeout(r, 0));
     expect(await svc.showRewarded('daily')).toBe(false);
     plugin.emit(ADMOB_EVENTS.dismissed);

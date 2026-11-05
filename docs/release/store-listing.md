@@ -8,26 +8,27 @@ Pull the lever of a gold gem machine hidden in a cave. Collect cute gems!
 **Full description** (max 4000):
 A gold gem machine has appeared deep in a cozy cave. Pull its lever and discover adorable gem friends!
 
-Geode Genesis is a relaxed collecting game. Earn coins while you are away, claim your daily bonus, then pull the lever to win gems of five rarities: Quartz, Amethyst, Emerald, Ruby and the one and only Diamond. Every gem has its own cute face and a little story.
+Geode Genesis is a relaxed collecting game. Claim a free pull every day, collect login rewards and goals, then pull the lever to win gems of five rarities: Quartz, Amethyst, Emerald, Ruby and the one and only Diamond. Every gem has its own cute face and a little story.
 
 * COLLECT 24 gems with different shapes, colors and personalities, drawn with love.
-* BUILD YOUR LUCKY CREW. Put your favorite gems in your crew to add a little luck to every crack. Unlock more crew slots with shards.
+* BUILD YOUR LUCKY CREW. Put your favorite gems in your crew to add luck to every pull. Higher gem levels, completed sets and collection rewards add more. Unlock more crew slots with shards.
 * LEVEL UP your gems by finding duplicates. Extra copies at max level turn into shards.
+* NEVER STUCK. Every 150 pulls you can choose any gem you want, and shards can buy a gem you are missing.
 * NEVER LEAVE EMPTY-HANDED. Pity timers guarantee an Emerald or better within 10 pulls and a Ruby or better within 50.
-* IDLE FRIENDLY. Pebble mines for you for up to 8 hours while you are away.
+* FREE EVERY DAY. Your first pull is free, and so is one pull every day. A forgiving login calendar and daily goals keep the rewards coming.
 * FAIR AND OPEN. Full drop rates and pity rules are always on the Settings and Rates screen.
 
 No real-money purchases. Optional rewarded ads can double your coin rewards, and they never change your pull odds. Contains ads.
 
 **Category:** Games > Casual (alternate: Simulation)
-**Tags:** casual, collection, idle, cute
+**Tags:** casual, collection, gacha, cute
 **Contact email:** [SUPPORT EMAIL]
 **Privacy policy URL:** [HOSTED URL of privacy-policy.html]
 
 ## Graphics (all in `store/`)
 - App icon 512x512: `play-icon-512.png`
 - Feature graphic 1024x500: `feature-graphic-1024x500.png`
-- Phone screenshots (1080x2160): `screenshots/1-camp.png` ... `5-crew.png`
+- Phone screenshots (1080x2160): `screenshots/1-daily.png` ... `6-shop.png`
   - They show real gameplay from a seeded demo save. Re-generate with `npm run build && npm run assets` after UI changes.
 
 ## Release notes (first release)

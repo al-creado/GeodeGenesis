@@ -1,5 +1,5 @@
 import { ART } from '../core/gem-art';
-import { Rarity } from '../core/config';
+import { Rarity, Reward } from '../core/config';
 
 export const RARITY_LABEL: Readonly<Record<Rarity, string>> = {
   quartz: 'Quartz',
@@ -36,4 +36,32 @@ export function formatDuration(ms: number): string {
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m`;
   return `${totalSeconds}s`;
+}
+
+/** Solid capsule colors: the rarity tell shown on capsules. */
+export const CAPSULE_COLOR: Readonly<Record<Rarity, string>> = {
+  quartz: ART.frame.quartz,
+  amethyst: ART.frame.amethyst,
+  emerald: ART.frame.emerald,
+  ruby: ART.frame.ruby,
+  diamond: `linear-gradient(135deg, ${ART.frame.rainbow.join(', ')})`,
+};
+
+/** "100 coins", "5 shards", "a free x10 pull", "+0.5% luck", joined with "and". */
+export function describeReward(r: Reward): string {
+  const parts: string[] = [];
+  if (r.coins) parts.push(`${r.coins} coins`);
+  if (r.shards) parts.push(`${r.shards} shards`);
+  if (r.tenTickets) parts.push(r.tenTickets === 1 ? 'a free x10 pull' : `${r.tenTickets} free x10 pulls`);
+  if (r.luck) parts.push(`${luckPct(r.luck)} luck`);
+  return parts.join(' and ') || 'nothing';
+}
+
+/** Short form for tight spots: "100", "5 sh", "x10". */
+export function shortReward(r: Reward): string {
+  if (r.coins) return String(r.coins);
+  if (r.tenTickets) return 'x10';
+  if (r.shards) return `${r.shards} sh`;
+  if (r.luck) return luckPct(r.luck);
+  return '-';
 }

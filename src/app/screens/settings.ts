@@ -27,6 +27,7 @@ export class Settings {
   protected readonly luckPct = luckPct;
   protected readonly pct = pct;
   protected readonly capText = luckPct(this.cfg.crew.luckCap);
+  protected readonly maxLevelMultiplier = Math.round((1 + this.cfg.progression.levelLuckFactor * (this.cfg.duplicates.maxLevel - 1)) * 100) / 100;
   protected readonly confirmReset = signal(false);
   protected readonly confirmCloudDelete = signal(false);
 

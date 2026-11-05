@@ -22,14 +22,29 @@
 </section>
 
 <section class="card" aria-labelledby="luck-h">
-  <h2 id="luck-h">Lucky Crew</h2>
+  <h2 id="luck-h">Luck</h2>
   <ul>
-    <li>Your crew has {{ cfg.crew.startSlots }} to {{ cfg.crew.maxSlots }} slots.</li>
-    <li>Each gem adds luck by rarity:
+    <li>Luck comes from three places: the gems in your Lucky Crew, completed sets, and claimed collection rewards.</li>
+    <li>Your crew has {{ cfg.crew.startSlots }} to {{ cfg.crew.maxSlots }} slots. Each crew gem adds luck by rarity:
       @for (r of rows(); track r.rarity; let last = $last) { {{ label[r.rarity] }} {{ luckPct(r.luck) }}@if (!last) {, } }.
+    </li>
+    <li>Each level above 1 adds {{ luckPct(cfg.progression.levelLuckFactor) }} of a gem's base luck (a level {{ cfg.duplicates.maxLevel }} gem gives {{ maxLevelMultiplier }} times its base luck).</li>
+    <li>Finding every gem of a rarity gives permanent luck:
+      @for (r of rows(); track r.rarity; let last = $last) { {{ label[r.rarity] }} {{ luckPct(cfg.progression.setBonuses[r.rarity]) }}@if (!last) {, } }.
     </li>
     <li>Total luck is capped at {{ capText }}.</li>
     <li>Luck multiplies every non-Quartz chance by (1 + luck), then all chances are rescaled to total 100%.</li>
+  </ul>
+</section>
+
+<section class="card" aria-labelledby="free-h">
+  <h2 id="free-h">Free pulls, spark and exchange</h2>
+  <ul>
+    <li>Your first pull is free, and you get one free pull every day. They use the same odds as paid pulls.</li>
+    <li>Every {{ cfg.shop.sparkAt }} pulls you can choose any gem (a spark). It does not reset your pity.</li>
+    <li>Shards can buy a gem you have not found yet. Prices:
+      @for (r of rows(); track r.rarity; let last = $last) { {{ label[r.rarity] }} {{ cfg.shop.exchangeShards[r.rarity] }}@if (!last) {, } }.
+    </li>
   </ul>
 </section>
 
@@ -57,7 +72,7 @@
 <section class="card" aria-labelledby="ads-h">
   <h2 id="ads-h">Ads</h2>
   <p class="strong">Ads are optional and never change your pull odds.</p>
-  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the daily bonus, idle collection and the bonus after a pull.</p>
+  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the login calendar and on the bonus after a pull.</p>
   <label class="toggle">
     <input type="checkbox" [checked]="game.adsEnabled()" (change)="setAds($event)" />
     <span>Offer rewarded ads</span>

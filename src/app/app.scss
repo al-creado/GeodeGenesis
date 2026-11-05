@@ -16,6 +16,7 @@
 
 .pills { display: flex; align-items: center; gap: 8px; }
 .pill {
+  text-decoration: none; color: inherit;
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--card); border: 2px solid var(--card-border); border-radius: 999px;
   padding: 4px 12px 4px 8px; font-weight: 800; font-size: 16px;
@@ -39,5 +40,10 @@
     padding: 8px 0 6px; min-height: 60px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 800;
     svg { width: 26px; height: 26px; }
     &.active { color: var(--gold); }
+  }
+  button.locked {
+    border: 0; background: none; font: inherit; font-weight: 800; opacity: 0.5; cursor: pointer;
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0 6px; min-height: 60px; color: var(--muted); font-size: 13px;
+    svg { width: 26px; height: 26px; }
   }
 }

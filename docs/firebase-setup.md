@@ -26,7 +26,8 @@ Build > Remote Config > add one parameter:
 
 ```json
 {
-  "economy": { "crackCost1": 100, "crackCost10": 900, "idleCoinsPerHour": 15, "idleCapHours": 8, "adMultiplier": 2, "postCrackBonus": 3, "dailyBonus": [10, 15, 20, 30, 40, 50, 75] },
+  "economy": { "startingCoins": 300, "crackCost1": 100, "crackCost10": 900, "adMultiplier": 2, "postCrackBonus": 3, "streakRewards": [{ "coins": 100 }, { "coins": 100 }, { "coins": 150 }, { "coins": 150 }, { "coins": 200 }, { "coins": 250 }, { "tenTickets": 1 }] },
+  "shop": { "sparkAt": 150, "exchangeShards": { "quartz": 20, "amethyst": 60, "emerald": 150, "ruby": 250, "diamond": 600 } },
   "baseOdds": { "quartz": 60, "amethyst": 28, "emerald": 9, "ruby": 2.5, "diamond": 0.5 },
   "luckPerGem": { "quartz": 0.002, "amethyst": 0.005, "emerald": 0.01, "ruby": 0.02, "diamond": 0.03 },
   "crew": { "luckCap": 0.15, "slotUnlockShards": [50, 150] },
@@ -34,7 +35,7 @@ Build > Remote Config > add one parameter:
   "duplicates": { "shardsPerDuplicate": { "quartz": 1, "amethyst": 3, "emerald": 10, "ruby": 30, "diamond": 100 } }
 }
 ```
-Every group is optional and validated (see `src/app/core/remote-config.ts`): an invalid group is ignored and the rest applies. Odds must sum to 100. Ad unit ids, save version, level cap and slot counts can never be changed remotely.
+Goals, collection milestones, set bonuses, level luck and unlock rules are fixed in the app and cannot be changed remotely. Every group is optional and validated (see `src/app/core/remote-config.ts`): an invalid group is ignored and the rest applies. Odds must sum to 100. Ad unit ids, save version, level cap and slot counts can never be changed remotely.
 
 Changes are fetched at app start (3 second limit, 1 hour minimum fetch interval). A late fetch is cached and applies on the next launch, so numbers never change mid-session. The Settings and Rates screen always shows the live values, so changed odds are disclosed automatically.
 

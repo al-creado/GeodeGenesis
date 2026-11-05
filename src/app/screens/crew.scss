@@ -32,3 +32,6 @@
   .small { margin: 0; }
   .act { font-weight: 800; color: var(--gold); }
 }
+.parts { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+.parts li { display: flex; justify-content: space-between; }
+.parts b { color: var(--text); }
