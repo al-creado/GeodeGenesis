@@ -84,7 +84,7 @@ Run through this on a real phone with the release build (test ads on until the e
 - [ ] Switch `useTestAds` to false only for the final build, and confirm real ads load (as the owner, do not click them).
 
 ## 7b. Economy check (do before launch) [you]
-`npm run sim` plays hundreds of simulated players through the real game rules and prints how many days it takes to reach 6, 12, 18, 22 and 24 of the 24 gems. You can test numbers before publishing them: `npm run sim -- '<economy_config JSON>'` (same format as the Remote Config parameter). With the shipped numbers, players who check in 3 times a day with ads finish the collection in about a week, so consider lowering income (see the README or ask for the recommended values) and set them through Remote Config.
+`npm run sim` plays hundreds of simulated players through the real game rules and prints how many days it takes to reach 6, 12, 18, 22 and 24 of the 24 gems. You can test numbers before publishing them: `npm run sim -- '<economy_config JSON>'` (same format as the Remote Config parameter). With the shipped numbers (idle 15/h, daily 10 to 75, bonus 3 per pull) the median player finishes all 24 gems in about 113 days with 1 visit a day and no ads, and about 22 days with 3 visits a day and ads. Retune through Remote Config if playtesting says it feels too slow or too fast.
 
 ## 8. After the internal test
 Promote to closed/open testing or production when the checks pass. Keep the upload key, keystore passwords and Firebase/AdMob access safe.

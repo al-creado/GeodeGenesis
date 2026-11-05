@@ -26,7 +26,7 @@ Build > Remote Config > add one parameter:
 
 ```json
 {
-  "economy": { "crackCost1": 100, "crackCost10": 900, "idleCoinsPerHour": 40, "idleCapHours": 8, "adMultiplier": 2, "postCrackBonus": 10, "dailyBonus": [20, 30, 40, 60, 80, 100, 150] },
+  "economy": { "crackCost1": 100, "crackCost10": 900, "idleCoinsPerHour": 15, "idleCapHours": 8, "adMultiplier": 2, "postCrackBonus": 3, "dailyBonus": [10, 15, 20, 30, 40, 50, 75] },
   "baseOdds": { "quartz": 60, "amethyst": 28, "emerald": 9, "ruby": 2.5, "diamond": 0.5 },
   "luckPerGem": { "quartz": 0.002, "amethyst": 0.005, "emerald": 0.01, "ruby": 0.02, "diamond": 0.03 },
   "crew": { "luckCap": 0.15, "slotUnlockShards": [50, 150] },

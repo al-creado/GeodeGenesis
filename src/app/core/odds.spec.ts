@@ -8,9 +8,10 @@ describe('config', () => {
   it('base odds sum to 100', () => {
     expect(sum(GAME_CONFIG.baseOdds)).toBeCloseTo(100, 10);
   });
-  it('day 4 daily bonus is 60 coins', () => {
-    expect(GAME_CONFIG.economy.dailyBonus).toHaveLength(7);
-    expect(GAME_CONFIG.economy.dailyBonus[3]).toBe(60);
+  it('has a 7-day daily bonus that never shrinks', () => {
+    const d = GAME_CONFIG.economy.dailyBonus;
+    expect(d).toHaveLength(7);
+    expect(d).toEqual([...d].sort((a, b) => a - b));
   });
   it('x10 is cheaper than 10 x x1', () => {
     expect(GAME_CONFIG.economy.crackCost1).toBe(100);

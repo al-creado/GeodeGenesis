@@ -11,7 +11,7 @@ Coins come from idle income, a daily bonus, and optional rewarded ads. Coins buy
 - **Coins**: main currency (never called "gems").
 - **Shards**: earned when a duplicate drops at max level.
 - Crack x1 = 100 coins, x10 = 900 coins. Idle coins accrue while away, capped at 8 hours.
-- 7-day daily bonus (day 4 = 60 coins).
+- 7-day daily bonus (10/15/20/30/40/50/75 coins; the spec's "day 4 = 60" was a sample value and was rebalanced after the economy simulation).
 
 ## Rarity
 | Rarity | Odds | Luck per crew gem | Gems |

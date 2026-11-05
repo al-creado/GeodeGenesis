@@ -69,7 +69,7 @@ describe('daily bonus', () => {
     expect(r.daily).toEqual({ claimedDay: 1, lastClaimDay: 100 });
   });
 
-  it('pays 60 coins on day 4', () => {
+  it('pays the configured amount on day 4', () => {
     let d: DailyState = INITIAL_DAILY;
     let last = null;
     for (let day = 0; day < 4; day++) {
@@ -77,7 +77,7 @@ describe('daily bonus', () => {
       d = last.daily;
     }
     expect(last!.day).toBe(4);
-    expect(last!.coins).toBe(60);
+    expect(last!.coins).toBe(E.dailyBonus[3]);
   });
 
   it('cannot be claimed twice on the same day', () => {
