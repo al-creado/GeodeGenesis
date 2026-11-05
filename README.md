@@ -73,6 +73,9 @@ npm run android:debug    # build a debug APK: android/app/build/outputs/apk/debu
 ```
 Ads: in the browser the Simulated dialog is used; in the Android app `AdMobAdService` is used with **Google test ids only** (see `GAME_CONFIG.ads.admob` and `strings.xml`). Real ids are a Stage 6 task.
 
+## Economy playtest
+`npm run sim` simulates players (casual, regular, dedicated) and prints the median day each collection milestone is reached. Try new numbers before setting them in Remote Config: `npm run sim -- '{"economy":{"idleCoinsPerHour":15}}'`.
+
 ## Development
 Requires Node >= 22.22.3 or 24 (Angular CLI requirement).
 ```bash

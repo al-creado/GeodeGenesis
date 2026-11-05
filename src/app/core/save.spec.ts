@@ -27,6 +27,18 @@ describe('migrateSave', () => {
     expect(s.savedAt).toBe(0);
     expect(s.collection['pebble'].level).toBe(2);
   });
+  it('upgrades v2 saves: existing players skip the intro, new ones see it', () => {
+    const played = migrateSave({ version: 2, totalCracks: 4, collection: { pebble: { level: 1 } }, settings: { adsEnabled: false }, savedAt: 9 }, NOW)!;
+    expect(played.version).toBe(GAME_CONFIG.saveVersion);
+    expect(played.settings).toEqual({ adsEnabled: false, introSeen: true, cloudSave: true });
+    const fresh = migrateSave({ version: 2, settings: {} }, NOW)!;
+    expect(fresh.settings.introSeen).toBe(false);
+  });
+  it('upgrades v1 all the way to the current version', () => {
+    const s = migrateSave({ version: 1, coins: 5, totalCracks: 2 }, NOW)!;
+    expect(s.version).toBe(GAME_CONFIG.saveVersion);
+    expect(s.settings.introSeen).toBe(true);
+  });
   it('keeps savedAt on a v2 save', () => {
     expect(migrateSave({ ...createNewSave(NOW), savedAt: 12345 }, NOW)!.savedAt).toBe(12345);
   });
@@ -59,7 +71,7 @@ describe('migrateSave', () => {
     expect(s.crewSlots).toBe(GAME_CONFIG.crew.maxSlots);
     expect(s.pity).toEqual({ sinceEmerald: GAME_CONFIG.pity.emeraldOrBetter - 1, sinceRuby: 0 });
     expect(s.daily).toEqual({ claimedDay: 7, lastClaimDay: null });
-    expect(s.settings.adsEnabled).toBe(true);
+    expect(s.settings).toEqual({ adsEnabled: true, introSeen: true, cloudSave: true }); // has a collection, so no intro
   });
   it('trims the crew to the slot count', () => {
     const s = migrateSave(

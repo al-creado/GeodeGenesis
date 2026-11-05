@@ -1,0 +1,13 @@
+.backdrop { position: fixed; inset: 0; z-index: 90; background: rgba(15, 8, 4, 0.85); display: grid; place-items: center; padding: 20px; }
+.box { width: min(360px, 100%); background: var(--card); border: 2px solid var(--card-border); border-radius: 20px; padding: 20px 18px 16px; text-align: center; }
+.art { width: 120px; margin: 0 auto 6px; }
+.art.geode { width: 150px; }
+.art.row { width: auto; display: flex; justify-content: center; gap: 12px; }
+.small { width: 90px; }
+h2 { font-size: 22px; margin: 4px 0 8px; }
+p { margin: 0 0 14px; font-size: 15px; line-height: 1.4; }
+strong { color: var(--gold); }
+.dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--card-border); }
+.dot.on { background: var(--gold); }
+.actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; }

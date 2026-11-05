@@ -7,7 +7,7 @@ This matches the app as built (Firebase Auth anonymous, Firestore, Remote Config
 |---|---|
 | Does the app collect or share any of the required user data types? | Yes |
 | Is all collected data encrypted in transit? | Yes |
-| Do you provide a way for users to request data deletion? | Yes, by email request (see privacy policy). Provide the policy URL; no in-app deletion yet. |
+| Do you provide a way for users to request data deletion? | Yes. In the app: Settings > Cloud save > Delete my cloud data (deletes the cloud save and the anonymous account). Email request for players who can no longer open the app. Provide the policy URL. |
 | Does the app let users create an account? | No (anonymous sign-in is automatic and invisible) |
 
 ## Data types

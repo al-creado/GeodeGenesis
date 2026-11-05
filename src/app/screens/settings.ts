@@ -28,6 +28,7 @@ export class Settings {
   protected readonly pct = pct;
   protected readonly capText = luckPct(this.cfg.crew.luckCap);
   protected readonly confirmReset = signal(false);
+  protected readonly confirmCloudDelete = signal(false);
 
   protected readonly rows = computed(() =>
     RARITIES.map((r) => ({
@@ -46,6 +47,23 @@ export class Settings {
 
   protected syncNow(): void {
     void this.cloud.start();
+  }
+
+  protected replayIntro(): void {
+    this.game.replayIntro();
+  }
+
+  protected async deleteCloud(): Promise<void> {
+    if (!this.confirmCloudDelete()) {
+      this.confirmCloudDelete.set(true);
+      return;
+    }
+    this.confirmCloudDelete.set(false);
+    await this.cloud.deleteCloudData();
+  }
+
+  protected enableCloud(): void {
+    void this.cloud.enableCloud();
   }
 
   protected privacyOptions(): void {

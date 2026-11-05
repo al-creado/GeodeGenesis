@@ -136,9 +136,9 @@ async function main() {
     const lv = { pebble: 3, frost: 2, honey: 1, mochi: 1, pip: 2, biscuit: 1, plum: 4, bluebell: 2, lilac: 1, wisp: 1, fern: 2, clover: 1, ember: 1, cherry: 1, halo: 1 };
     const collection = Object.fromEntries(Object.entries(lv).map(([k, v]) => [k, { level: v }]));
     localStorage.setItem('geode-genesis-save', JSON.stringify({
-      version: 2, coins: 1840, shards: 24, collection, pity: { sinceEmerald: 6, sinceRuby: 21 },
+      version: 3, coins: 1840, shards: 24, collection, pity: { sinceEmerald: 6, sinceRuby: 21 },
       crew: ['halo', 'ember', 'fern'], crewSlots: 3, lastIdleCollect: Date.now() - 5.5 * 3600000,
-      daily: { claimedDay: 3, lastClaimDay: dayNum - 1 }, totalCracks: 61, settings: { adsEnabled: true }, savedAt: Date.now(),
+      daily: { claimedDay: 3, lastClaimDay: dayNum - 1 }, totalCracks: 61, settings: { adsEnabled: true, introSeen: true, cloudSave: true }, savedAt: Date.now(),
     }));
   });
   const shot = async (url, name, act) => {

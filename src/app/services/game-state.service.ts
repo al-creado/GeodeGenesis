@@ -18,6 +18,7 @@ import { ROSTER } from '../core/roster';
 import { AdPlacement, AdService } from './ad.service';
 import { PullService } from './pull.service';
 import { SaveService } from './save.service';
+import { ToastService } from './toast.service';
 import { CLOCK, CONFIG } from './tokens';
 
 /** How many geodes one crack button opens. */
@@ -40,6 +41,7 @@ export class GameStateService {
   private readonly ads = inject(AdService);
   private readonly pulls = inject(PullService);
   private readonly clock = inject(CLOCK);
+  private readonly toast = inject(ToastService);
 
   private readonly state = signal<SaveData>(this.loadInitial());
   private readonly nowMs = signal(this.clock());
@@ -52,6 +54,13 @@ export class GameStateService {
   readonly crewSlots = computed(() => this.state().crewSlots);
   readonly totalCracks = computed(() => this.state().totalCracks);
   readonly adsEnabled = computed(() => this.state().settings.adsEnabled);
+  readonly introSeen = computed(() => this.state().settings.introSeen);
+  readonly cloudSaveEnabled = computed(() => this.state().settings.cloudSave);
+
+  /** Set by "How to play" to show the intro again after it was dismissed. */
+  private readonly introReplay = signal(false);
+  /** Whether the intro overlay is on screen: first run, or replayed from Settings. */
+  readonly showIntro = computed(() => !this.introSeen() || this.introReplay());
 
   readonly ownedCount = computed(() => Object.keys(this.state().collection).length);
   readonly rosterSize = ROSTER.length;
@@ -187,7 +196,26 @@ export class GameStateService {
   }
 
   setAdsEnabled(enabled: boolean): void {
-    this.commit({ ...this.state(), settings: { ...this.state().settings, adsEnabled: enabled } });
+    this.updateSettings({ adsEnabled: enabled });
+  }
+
+  setCloudSave(enabled: boolean): void {
+    this.updateSettings({ cloudSave: enabled });
+  }
+
+  /** Close the intro and remember that it was seen. */
+  completeIntro(): void {
+    this.introReplay.set(false);
+    if (!this.introSeen()) this.updateSettings({ introSeen: true });
+  }
+
+  /** "How to play": show the intro again. */
+  replayIntro(): void {
+    this.introReplay.set(true);
+  }
+
+  private updateSettings(patch: Partial<SaveData['settings']>): void {
+    this.commit({ ...this.state(), settings: { ...this.state().settings, ...patch } });
   }
 
   /** Wipe all progress and start over. */
@@ -215,7 +243,9 @@ export class GameStateService {
     if (!this.adsAvailable() || this.adBusy()) return false;
     this.adBusy.set(true);
     try {
-      return await this.ads.showRewarded(placement);
+      const rewarded = await this.ads.showRewarded(placement);
+      if (!rewarded) this.toast.show('No reward: the ad was not ready or was closed early. Try again!', 3500);
+      return rewarded;
     } finally {
       this.adBusy.set(false);
     }

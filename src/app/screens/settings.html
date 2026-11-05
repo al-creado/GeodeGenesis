@@ -73,17 +73,34 @@
     @case ('off') {
       <p class="muted">Cloud save isn't set up in this build. Your progress is saved on this device.</p>
     }
-    @case ('syncing') { <p role="status">Syncing&hellip;</p> }
+    @case ('disabled') {
+      <p role="status">Cloud save is off. Your progress is saved on this device only.</p>
+      @if (cloud.message()) { <p class="muted small">{{ cloud.message() }}</p> }
+    }
+    @case ('syncing') { <p role="status">Working&hellip;</p> }
     @case ('synced') { <p role="status">Saved to the cloud @if (syncedText()) { at {{ syncedText() }} }.</p> }
     @case ('error') {
       <p role="status" class="strong">Couldn't sync. Your progress is still safe on this device.</p>
       @if (cloud.message()) { <p class="muted small">{{ cloud.message() }}</p> }
     }
   }
-  @if (cloud.status() !== 'off') {
-    <button type="button" class="btn btn-quiet" [disabled]="cloud.status() === 'syncing'" (click)="syncNow()">Sync now</button>
-    <p class="muted small">Your cloud save is tied to an anonymous account on this device. If you uninstall the game it may not be recoverable.</p>
+  @if (cloud.status() === 'disabled') {
+    <button type="button" class="btn btn-quiet" (click)="enableCloud()">Turn cloud save back on</button>
+  } @else if (cloud.status() !== 'off') {
+    <div class="btn-row">
+      <button type="button" class="btn btn-quiet" [disabled]="cloud.status() === 'syncing'" (click)="syncNow()">Sync now</button>
+      <button type="button" class="btn btn-quiet" [disabled]="cloud.status() === 'syncing'" (click)="deleteCloud()">
+        {{ confirmCloudDelete() ? 'Tap again to delete my cloud data' : 'Delete my cloud data' }}
+      </button>
+      @if (confirmCloudDelete()) { <button type="button" class="btn btn-quiet" (click)="confirmCloudDelete.set(false)">Cancel</button> }
+    </div>
+    <p class="muted small">Your cloud save is tied to an anonymous account on this device. If you uninstall the game it may not be recoverable. Deleting removes the cloud copy and the anonymous account; your progress on this device stays.</p>
   }
+</section>
+
+<section class="card" aria-labelledby="help-h">
+  <h2 id="help-h">How to play</h2>
+  <button type="button" class="btn btn-quiet" (click)="replayIntro()">Show the intro again</button>
 </section>
 
 <section class="card" aria-labelledby="data-h">

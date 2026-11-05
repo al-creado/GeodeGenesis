@@ -5,7 +5,8 @@ import { CLOUD_BACKEND } from './cloud-backend';
 import { GameStateService } from './game-state.service';
 import { CLOCK, CONFIG } from './tokens';
 
-export type CloudStatus = 'off' | 'syncing' | 'synced' | 'error';
+/** off: not configured. disabled: the player turned cloud save off. */
+export type CloudStatus = 'off' | 'disabled' | 'syncing' | 'synced' | 'error';
 
 /** How long to wait after the last change before uploading. */
 export const UPLOAD_DEBOUNCE_MS = 5000;
@@ -37,7 +38,7 @@ export class CloudSyncService {
   constructor() {
     effect(() => {
       const snap = this.game.snapshot();
-      if (this.ready && !this.blocked && snap.savedAt > this.uploadedAt) this.schedule();
+      if (this.ready && !this.blocked && this.game.cloudSaveEnabled() && snap.savedAt > this.uploadedAt) this.schedule();
     });
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', () => {
@@ -50,6 +51,10 @@ export class CloudSyncService {
   async start(): Promise<void> {
     if (!this.backend.available) {
       this.status.set('off');
+      return;
+    }
+    if (!this.game.cloudSaveEnabled()) {
+      this.status.set('disabled');
       return;
     }
     this.status.set('syncing');
@@ -90,13 +95,44 @@ export class CloudSyncService {
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     const snap = this.game.snapshot();
-    if (!this.ready || this.blocked || !this.uid || snap.savedAt <= this.uploadedAt) return;
+    if (!this.ready || this.blocked || !this.uid || !this.game.cloudSaveEnabled() || snap.savedAt <= this.uploadedAt) return;
     try {
       await this.upload(snap);
       this.markSynced();
     } catch (e) {
       this.fail(e instanceof Error ? e.message : 'Could not reach the cloud.');
     }
+  }
+
+  /**
+   * Delete the cloud save and stop syncing. Local progress is kept.
+   * If the delete fails, nothing changes so the player can try again.
+   */
+  async deleteCloudData(): Promise<void> {
+    if (!this.backend.available) return;
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    this.status.set('syncing');
+    try {
+      this.uid ??= await this.backend.signIn();
+      await this.backend.deleteCloudData(this.uid);
+    } catch (e) {
+      this.fail(`Could not delete your cloud data. Check your connection and try again. (${e instanceof Error ? e.message : 'unknown error'})`);
+      return;
+    }
+    this.ready = false;
+    this.uid = null;
+    this.uploadedAt = 0;
+    this.game.setCloudSave(false);
+    this.lastSyncedAt.set(null);
+    this.status.set('disabled');
+    this.message.set('Your cloud data was deleted. Progress stays on this device.');
+  }
+
+  /** Turn cloud save back on after it was disabled. */
+  async enableCloud(): Promise<void> {
+    this.game.setCloudSave(true);
+    await this.start();
   }
 
   private schedule(): void {

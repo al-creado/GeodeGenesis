@@ -31,6 +31,13 @@ class FakeBackend implements CloudBackend {
     this.writes.push({ uid, data: data as SaveData, savedAt });
     this.cloud = data;
   }
+  deleted: string[] = [];
+  deleteError: Error | null = null;
+  async deleteCloudData(uid: string): Promise<void> {
+    if (this.deleteError) throw this.deleteError;
+    this.deleted.push(uid);
+    this.cloud = null;
+  }
   async fetchRemoteConfig(): Promise<string> {
     if (this.remoteDelayMs) await new Promise((r) => setTimeout(r, this.remoteDelayMs));
     if (this.remoteError) throw this.remoteError;
@@ -164,6 +171,88 @@ describe('CloudSyncService', () => {
     await sync.start();
     expect(sync.status()).toBe('synced');
     expect(backend.writes).toHaveLength(1);
+  });
+});
+
+describe('Cloud data deletion', () => {
+  let now: number;
+  let storage: MemorySave;
+  let backend: FakeBackend;
+
+  function setup(): { sync: CloudSyncService; game: GameStateService } {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: SaveService, useValue: storage },
+        { provide: CLOUD_BACKEND, useValue: backend },
+        { provide: CLOCK, useValue: () => now },
+        { provide: RNG, useValue: createSequenceRng([0]) },
+      ],
+    });
+    return { sync: TestBed.inject(CloudSyncService), game: TestBed.inject(GameStateService) };
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    now = T0;
+    storage = new MemorySave();
+    backend = new FakeBackend();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('deletes the cloud save, keeps local progress, and stops syncing', async () => {
+    const { sync, game } = setup();
+    game.crack(1);
+    await sync.start();
+    expect(backend.writes).toHaveLength(1);
+
+    await sync.deleteCloudData();
+    expect(backend.deleted).toEqual(['uid-1']);
+    expect(sync.status()).toBe('disabled');
+    expect(game.cloudSaveEnabled()).toBe(false);
+    expect(game.totalCracks()).toBe(1); // local progress untouched
+
+    now += 1000;
+    game.crack(1);
+    TestBed.tick();
+    await vi.advanceTimersByTimeAsync(UPLOAD_DEBOUNCE_MS + 10);
+    await sync.flush();
+    expect(backend.writes).toHaveLength(1); // nothing uploaded after deletion
+  });
+
+  it('stays disabled on the next launch (no silent re-upload)', async () => {
+    const first = setup();
+    first.game.crack(1);
+    await first.sync.start();
+    await first.sync.deleteCloudData();
+
+    const again = setup(); // same stored save, new app launch
+    await again.sync.start();
+    expect(again.sync.status()).toBe('disabled');
+    expect(backend.writes).toHaveLength(1);
+  });
+
+  it('keeps sync on and reports the problem if the delete fails', async () => {
+    const { sync, game } = setup();
+    game.crack(1);
+    await sync.start();
+    backend.deleteError = new Error('offline');
+    await sync.deleteCloudData();
+    expect(sync.status()).toBe('error');
+    expect(sync.message()).toContain('offline');
+    expect(game.cloudSaveEnabled()).toBe(true);
+  });
+
+  it('can be turned back on, and then uploads local progress again', async () => {
+    const { sync, game } = setup();
+    game.crack(1);
+    await sync.start();
+    await sync.deleteCloudData();
+    now += 1000;
+    await sync.enableCloud();
+    expect(game.cloudSaveEnabled()).toBe(true);
+    expect(sync.status()).toBe('synced');
+    expect(backend.writes.length).toBeGreaterThanOrEqual(2);
   });
 });
 

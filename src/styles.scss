@@ -12,6 +12,9 @@
   --gold: #f2b84b;
   --amber: #e8833a;
   --ink: #24160f;
+  /* Safe-area insets: native env() where supported, else the values Capacitor's SystemBars injects. */
+  --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

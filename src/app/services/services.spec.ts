@@ -6,6 +6,7 @@ import { createSequenceRng } from '../core/rng';
 import { SaveData } from '../core/save';
 import { AdPlacement, AdService, NoAdsService, SimulatedAdService } from './ad.service';
 import { GameStateService } from './game-state.service';
+import { ToastService } from './toast.service';
 import { LocalStorageSaveService, SAVE_KEY, SaveService } from './save.service';
 import { CLOCK, CONFIG, RNG } from './tokens';
 
@@ -147,6 +148,49 @@ describe('GameStateService', () => {
       g.setAdsEnabled(true);
       ads.available = false;
       expect(g.adsAvailable()).toBe(false);
+    });
+  });
+
+  describe('ad feedback', () => {
+    it('tells the player when an ad gave no reward', async () => {
+      const g = setup();
+      const toast = TestBed.inject(ToastService);
+      g.crack(1);
+      ads.reward = false;
+      await g.boostCrackBonus();
+      expect(toast.message()).toContain('No reward');
+    });
+
+    it('stays quiet when the ad rewards', async () => {
+      const g = setup();
+      const toast = TestBed.inject(ToastService);
+      g.crack(1);
+      await g.boostCrackBonus();
+      expect(toast.message()).toBeNull();
+    });
+  });
+
+  describe('first-run intro', () => {
+    it('shows for a new player and not again once completed', () => {
+      const g = setup();
+      expect(g.showIntro()).toBe(true);
+      g.completeIntro();
+      expect(g.showIntro()).toBe(false);
+      expect((storage.stored as SaveData).settings.introSeen).toBe(true);
+    });
+
+    it('can be replayed from Settings without changing the saved flag', () => {
+      const g = setup();
+      g.completeIntro();
+      g.replayIntro();
+      expect(g.showIntro()).toBe(true);
+      g.completeIntro();
+      expect(g.showIntro()).toBe(false);
+    });
+
+    it('does not show for a returning player', () => {
+      storage.stored = { version: 3, totalCracks: 5, collection: { pebble: { level: 1 } }, settings: { introSeen: true } };
+      expect(setup().showIntro()).toBe(false);
     });
   });
 

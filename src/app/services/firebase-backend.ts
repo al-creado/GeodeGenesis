@@ -37,6 +37,20 @@ export class FirebaseBackend implements CloudBackend {
     await fs.setDoc(ref, { data, savedAt, updatedAt: fs.serverTimestamp() });
   }
 
+  async deleteCloudData(uid: string): Promise<void> {
+    const fs = await import('firebase/firestore');
+    await fs.deleteDoc(fs.doc(fs.getFirestore(await this.getApp()), SAVES_COLLECTION, uid));
+    // Also remove the anonymous account itself. If the SDK refuses (e.g. an old session),
+    // the save is already gone, so this is best effort.
+    try {
+      const { getAuth, deleteUser } = await import('firebase/auth');
+      const user = getAuth(await this.getApp()).currentUser;
+      if (user && user.uid === uid) await deleteUser(user);
+    } catch {
+      // ignore
+    }
+  }
+
   async fetchRemoteConfig(): Promise<string> {
     const rc = await import('firebase/remote-config');
     const config = rc.getRemoteConfig(await this.getApp());

@@ -43,4 +43,5 @@ Changes are fetched at app start (3 second limit, 1 hour minimum fetch interval)
 - After that, changes upload 5 seconds after the last change and when the app goes to the background.
 - A cloud save from a newer app version or one that can't be read is never overwritten.
 - Anonymous accounts are tied to the install: uninstalling can lose access to the save (account linking is out of scope for v1).
+- Settings > Cloud save > Delete my cloud data deletes `saves/{uid}` and the anonymous account, then turns cloud sync off (the choice is stored in the save, so it survives relaunches). The Firestore rules already allow a player to delete only their own document.
 - Devices with wrong clocks can confuse "newest wins".

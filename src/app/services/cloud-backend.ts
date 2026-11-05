@@ -11,6 +11,8 @@ export interface CloudBackend {
   /** The stored save (unvalidated) or null when none exists. */
   loadSave(uid: string): Promise<unknown>;
   writeSave(uid: string, data: unknown, savedAt: number): Promise<void>;
+  /** Delete the player's cloud save and anonymous account. */
+  deleteCloudData(uid: string): Promise<void>;
   /** Raw JSON text of the `economy_config` Remote Config parameter ('' when unset). */
   fetchRemoteConfig(): Promise<string>;
 }
@@ -20,6 +22,7 @@ export class NoCloudBackend implements CloudBackend {
   signIn(): Promise<string> { return Promise.reject(new Error('Cloud is not configured')); }
   loadSave(): Promise<unknown> { return Promise.resolve(null); }
   writeSave(): Promise<void> { return Promise.reject(new Error('Cloud is not configured')); }
+  deleteCloudData(): Promise<void> { return Promise.resolve(); }
   fetchRemoteConfig(): Promise<string> { return Promise.resolve(''); }
 }
 

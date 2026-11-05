@@ -12,6 +12,7 @@ import { Mine } from './mine';
 import { MineResult } from './mine-result';
 import { Settings } from './settings';
 import { Vault } from './vault';
+import { IntroDialog } from '../ui/intro-dialog';
 
 class MemorySave extends SaveService {
   override load(): unknown { return null; }
@@ -74,6 +75,31 @@ describe('screens', () => {
     const el = render(Settings);
     expect(el.textContent).not.toContain('Privacy policy');
     expect(el.textContent).not.toContain('Ad privacy options');
+  });
+
+  it('Intro walks through three steps with numbers from the config, then closes', () => {
+    configure(IntroDialog);
+    const game = TestBed.inject(GameStateService);
+    const fixture = TestBed.createComponent(IntroDialog);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    const buttons = () => [...el.querySelectorAll<HTMLButtonElement>('.actions button')];
+    expect(el.textContent).toContain('Welcome to Geode Genesis');
+    expect(el.textContent).toContain(`${GAME_CONFIG.economy.idleCapHours} hours`);
+    buttons()[1].click(); fixture.detectChanges();
+    expect(el.textContent).toContain(`${GAME_CONFIG.economy.crackCost10}`);
+    buttons()[1].click(); fixture.detectChanges();
+    expect(el.textContent).toContain('never change your pull odds');
+    expect(buttons()[1].textContent).toContain('Start mining');
+    buttons()[1].click(); fixture.detectChanges();
+    expect(game.showIntro()).toBe(false);
+    expect(el.querySelector('[role=dialog]')).toBeNull();
+  });
+
+  it('Settings offers replaying the intro', () => {
+    const el = render(Settings);
+    expect(el.textContent).toContain('How to play');
+    expect(el.textContent).toContain('Show the intro again');
   });
 
   it('MineResult shows a gem after a crack', () => {

@@ -15,7 +15,13 @@ export interface SaveData {
   readonly lastIdleCollect: number;
   readonly daily: DailyState;
   readonly totalCracks: number;
-  readonly settings: { readonly adsEnabled: boolean };
+  readonly settings: {
+    readonly adsEnabled: boolean;
+    /** The first-run intro has been shown (or the player already had progress). */
+    readonly introSeen: boolean;
+    /** Sync progress to the cloud. Turned off by "Delete my cloud data". */
+    readonly cloudSave: boolean;
+  };
   /** When progress last changed (epoch ms). 0 = untouched new game. Used to pick between local and cloud saves. */
   readonly savedAt: number;
 }
@@ -32,18 +38,26 @@ export function createNewSave(nowMs: number, config: GameConfig = GAME_CONFIG): 
     lastIdleCollect: nowMs,
     daily: INITIAL_DAILY,
     totalCracks: 0,
-    settings: { adsEnabled: true },
+    settings: { adsEnabled: true, introSeen: false, cloudSave: true },
     savedAt: 0,
   };
 }
 
 /** Old-version upgraders: key N upgrades a version-N save to N+1. */
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+
 const MIGRATIONS: Readonly<Record<number, (old: Record<string, unknown>) => Record<string, unknown>>> = {
   // v1 -> v2: add savedAt for cloud conflict resolution.
   1: (old) => ({ ...old, version: 2, savedAt: 0 }),
+  // v2 -> v3: settings gain introSeen and cloudSave. Existing players skip the intro.
+  2: (old) => {
+    const settings = isObject(old['settings']) ? old['settings'] : {};
+    const collection = isObject(old['collection']) ? old['collection'] : {};
+    const hasProgress = (typeof old['totalCracks'] === 'number' && old['totalCracks'] > 0) || Object.keys(collection).length > 0;
+    return { ...old, version: 3, settings: { ...settings, introSeen: hasProgress, cloudSave: true } };
+  },
 };
 
-const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 const int = (v: unknown, fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER): number =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(Math.max(Math.floor(v), min), max) : fallback;
 
@@ -97,7 +111,11 @@ export function migrateSave(raw: unknown, nowMs: number, config: GameConfig = GA
       lastClaimDay: typeof lastClaim === 'number' && Number.isFinite(lastClaim) ? Math.floor(lastClaim) : null,
     },
     totalCracks: int(data['totalCracks'], 0),
-    settings: { adsEnabled: typeof settings['adsEnabled'] === 'boolean' ? settings['adsEnabled'] : true },
+    settings: {
+      adsEnabled: typeof settings['adsEnabled'] === 'boolean' ? settings['adsEnabled'] : true,
+      introSeen: typeof settings['introSeen'] === 'boolean' ? settings['introSeen'] : false,
+      cloudSave: typeof settings['cloudSave'] === 'boolean' ? settings['cloudSave'] : true,
+    },
     savedAt: int(data['savedAt'], 0),
   };
 }
