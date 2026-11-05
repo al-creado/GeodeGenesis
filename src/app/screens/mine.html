@@ -1,6 +1,9 @@
 <section class="card banner">
-  <div class="geode"><app-geode-art /></div>
-  <h2>Crack a geode</h2>
+  <div class="machine">
+    <app-gold-machine [cost]="cfg.economy.crackCost1" [leverEnabled]="game.canAfford(1)" (lever)="crack(1)" />
+  </div>
+  <h2>The Gold Gem Machine</h2>
+  <p class="muted small tag">A gold machine has appeared deep in the cave. Pull the lever and see what rolls out.</p>
   <div class="btn-row">
     <button type="button" class="btn" [disabled]="!game.canAfford(1)" (click)="crack(1)">
       Mine x1 &middot; {{ cfg.economy.crackCost1 }} coins
@@ -42,7 +45,7 @@
       <div class="meter" role="progressbar" [attr.aria-label]="p.label + ' pity'" [attr.aria-valuenow]="p.count" aria-valuemin="0" [attr.aria-valuemax]="p.limit">
         <div class="meter-fill" [style.width.%]="(p.count / p.limit) * 100"></div>
       </div>
-      @if (p.next) { <p class="small gold">Your next crack is guaranteed!</p> }
+      @if (p.next) { <p class="small gold">Your next pull is guaranteed!</p> }
     </div>
   }
   <a class="link" routerLink="/settings">Full rates and pity rules</a>

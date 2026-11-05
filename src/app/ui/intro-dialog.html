@@ -8,9 +8,9 @@
           <p>Pebble mines coins for you, even while you are away (up to {{ cfg.economy.idleCapHours }} hours). Visit <strong>Camp</strong> to collect them and to claim your daily bonus.</p>
         }
         @case (1) {
-          <div class="art geode"><app-geode-art state="open" glow="#B58CFF" /></div>
-          <h2 id="intro-title">Crack geodes</h2>
-          <p>Spend coins in <strong>Mine</strong>: {{ cfg.economy.crackCost1 }} for one geode or {{ cfg.economy.crackCost10 }} for ten. Gems come in five rarities, and every {{ cfg.pity.emeraldOrBetter }} cracks you are guaranteed an Emerald or better.</p>
+          <div class="art machine"><app-gold-machine [cost]="cfg.economy.crackCost1" /></div>
+          <h2 id="intro-title">The Gold Gem Machine</h2>
+          <p>A gold machine has appeared in the cave. In <strong>Mine</strong>, pull the lever for {{ cfg.economy.crackCost1 }} coins, or ten pulls for {{ cfg.economy.crackCost10 }}. Gems come in five rarities, and every {{ cfg.pity.emeraldOrBetter }} pulls you are guaranteed an Emerald or better.</p>
         }
         @default {
           <div class="art row">

@@ -18,7 +18,7 @@
       }
     </tbody>
   </table>
-  <p class="muted small">Each crack picks a rarity using these odds, then a gem of that rarity at random. These are the current live rates.</p>
+  <p class="muted small">Each pull picks a rarity using these odds, then a gem of that rarity at random. These are the current live rates.</p>
 </section>
 
 <section class="card" aria-labelledby="luck-h">
@@ -36,10 +36,10 @@
 <section class="card" aria-labelledby="pity-h">
   <h2 id="pity-h">Pity rules</h2>
   <ul>
-    <li>An Emerald or better is guaranteed on crack number {{ cfg.pity.emeraldOrBetter }} if you haven't gotten one.</li>
-    <li>A Ruby or better is guaranteed on crack number {{ cfg.pity.rubyOrBetter }} if you haven't gotten one.</li>
+    <li>An Emerald or better is guaranteed on pull number {{ cfg.pity.emeraldOrBetter }} if you haven't gotten one.</li>
+    <li>A Ruby or better is guaranteed on pull number {{ cfg.pity.rubyOrBetter }} if you haven't gotten one.</li>
     <li>Each counter resets when that rarity or better drops. A Ruby or Diamond resets both.</li>
-    <li>If both guarantees are due on the same crack, you get the Ruby or better.</li>
+    <li>If both guarantees are due on the same pull, you get the Ruby or better.</li>
   </ul>
 </section>
 
@@ -57,7 +57,7 @@
 <section class="card" aria-labelledby="ads-h">
   <h2 id="ads-h">Ads</h2>
   <p class="strong">Ads are optional and never change your pull odds.</p>
-  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the daily bonus, idle collection and the bonus after a crack.</p>
+  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the daily bonus, idle collection and the bonus after a pull.</p>
   <label class="toggle">
     <input type="checkbox" [checked]="game.adsEnabled()" (change)="setAds($event)" />
     <span>Offer rewarded ads</span>

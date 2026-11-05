@@ -46,7 +46,7 @@
 <section class="card" aria-labelledby="own-h">
   <h2 id="own-h">Your gems</h2>
   @if (owned().length === 0) {
-    <p class="muted">Crack some geodes to find crew members.</p>
+    <p class="muted">Pull some gems from the machine to find crew members.</p>
   } @else {
     <ul class="list">
       @for (o of owned(); track o.gem.id) {

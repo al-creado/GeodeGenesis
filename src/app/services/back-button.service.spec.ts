@@ -23,7 +23,7 @@ describe('BackButtonService', () => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
-        { provide: SaveService, useClass: MemorySave },
+        { provide: SaveService, useValue: new MemorySave() },
         { provide: Router, useValue: { get url() { return url; }, navigate } },
         { provide: Location, useValue: { back } },
         { provide: APP_EXIT, useValue: exit },

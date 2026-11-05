@@ -1,12 +1,12 @@
 @if (batch(); as b) {
   @if (!revealed()) {
-    <section class="stage" (click)="skip()" (keydown.enter)="skip()" tabindex="0" role="button" aria-label="Cracking the geode. Tap to skip.">
-      <div class="geode"><app-geode-art state="cracking" /></div>
-      <p class="muted">Cracking&hellip; (tap to skip)</p>
+    <section class="stage" (click)="skip()" (keydown.enter)="skip()" tabindex="0" role="button" aria-label="Pulling the lever. Tap to skip.">
+      <div class="machine"><app-gold-machine [state]="machine()" [cost]="againCost()" /></div>
+      <p class="muted">Pulling the lever&hellip; (tap to skip)</p>
     </section>
   } @else {
     <div class="revealed" role="region" aria-live="polite" aria-label="Mining result">
-      <div class="geode small-geode"><app-geode-art state="open" [glow]="glow()" /></div>
+      <div class="machine small-machine"><app-gold-machine state="open" [glow]="glow()" [cost]="againCost()" /></div>
 
       @if (single(); as r) {
         <article class="card gem-card" [class]="'card gem-card r-' + r.gem.rarity">

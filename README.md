@@ -39,7 +39,7 @@ Background #2A1C14, cards #3E2A1E with #5C402D borders, nav bar #1E130D, stalact
 
 ## Screens (bottom tabs)
 1. **Camp**: idle counter with Pebble mascot, Collect / Watch ad to collect x2, 7-day daily bonus row.
-2. **Mine**: geode banner, Mine x1 / x10, odds list, crew luck chip, pity bars, rates link, reveal result screen.
+2. **Mine**: a gold lottery machine that has appeared in the cave (pull its lever, or use Mine x1 / x10; same odds, costs and pity as before), odds list, crew luck chip, pity bars, rates link, and a result screen where the lever is pulled, a capsule drops and pops open.
 3. **Vault**: rarity filter chips, 3-column grid, locked "?" cells, count like 7/24.
 4. **Crew**: slots, luck meter with cap, before/after Ruby odds, tap-to-add owned gems.
 Plus Settings/Rates sub-screen.

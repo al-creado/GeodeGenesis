@@ -1,7 +1,7 @@
-import { Type } from '@angular/core';
+import { Component, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GAME_CONFIG } from '../core/config';
 import { SaveData } from '../core/save';
 import { GameStateService } from '../services/game-state.service';
@@ -20,11 +20,14 @@ class MemorySave extends SaveService {
   override clear(): void {}
 }
 
+@Component({ template: '' })
+class Blank {}
+
 function configure(component: Type<unknown>): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [component],
-    providers: [provideRouter([]), { provide: SaveService, useClass: MemorySave }],
+    providers: [provideRouter([{ path: '**', component: Blank }]), { provide: SaveService, useValue: new MemorySave() }],
   });
 }
 
@@ -36,10 +39,35 @@ function render(component: Type<unknown>): HTMLElement {
 }
 
 describe('screens', () => {
+  afterEach(() => localStorage.clear());
+
   it('Camp shows the ad disclosure and daily bonus', () => {
     const el = render(Camp);
     expect(el.textContent).toContain('Ads are optional and never change your pull odds.');
     expect(el.querySelectorAll('.day')).toHaveLength(GAME_CONFIG.economy.dailyBonus.length);
+  });
+
+  it('Mine shows the gold machine, whose lever pulls once', () => {
+    const el = render(Mine);
+    expect(el.querySelector('app-gold-machine')).not.toBeNull();
+    expect(el.textContent).toContain('Gold Gem Machine');
+    const lever = el.querySelector<SVGGElement>('.lever')!;
+    expect(lever.getAttribute('aria-disabled')).toBe('false'); // new players can afford one pull
+    const game = TestBed.inject(GameStateService);
+    lever.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(game.totalCracks()).toBe(1);
+    expect(game.coins()).toBe(GAME_CONFIG.economy.startingCoins - GAME_CONFIG.economy.crackCost1 + GAME_CONFIG.economy.postCrackBonus);
+  });
+
+  it('Mine locks the lever when the player cannot afford a pull', () => {
+    configure(Mine);
+    TestBed.inject(SaveService).save = () => undefined;
+    const game = TestBed.inject(GameStateService);
+    (game as unknown as { state: { update(f: (s: SaveData) => SaveData): void } }).state.update((s) => ({ ...s, coins: GAME_CONFIG.economy.crackCost1 - 1 }));
+    const fixture = TestBed.createComponent(Mine);
+    fixture.detectChanges();
+    const lever = (fixture.nativeElement as HTMLElement).querySelector<SVGGElement>('.lever')!;
+    expect(lever.getAttribute('aria-disabled')).toBe('true');
   });
 
   it('Mine shows costs and the odds list from config', () => {
@@ -66,8 +94,8 @@ describe('screens', () => {
     const el = render(Settings);
     expect(el.querySelectorAll('tbody tr')).toHaveLength(5);
     expect(el.textContent).toContain('60.00%');
-    expect(el.textContent).toContain(`crack number ${GAME_CONFIG.pity.emeraldOrBetter}`);
-    expect(el.textContent).toContain(`crack number ${GAME_CONFIG.pity.rubyOrBetter}`);
+    expect(el.textContent).toContain(`pull number ${GAME_CONFIG.pity.emeraldOrBetter}`);
+    expect(el.textContent).toContain(`pull number ${GAME_CONFIG.pity.rubyOrBetter}`);
     expect(el.textContent).toContain('Ads are optional and never change your pull odds.');
   });
 
@@ -100,6 +128,32 @@ describe('screens', () => {
     const el = render(Settings);
     expect(el.textContent).toContain('How to play');
     expect(el.textContent).toContain('Show the intro again');
+  });
+
+  describe('result animation', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('plays pull, then drop, then opens, before showing the gem', () => {
+      vi.useFakeTimers();
+      configure(MineResult);
+      TestBed.inject(GameStateService).crack(1);
+      const fixture = TestBed.createComponent(MineResult);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const state = () => el.querySelector('svg.machine')?.getAttribute('class') ?? '';
+      expect(state()).toContain('m-pulling');
+      expect(el.querySelector('.gem-card')).toBeNull();
+
+      vi.advanceTimersByTime(900);
+      fixture.detectChanges();
+      expect(state()).toContain('m-dropping');
+      expect(el.querySelector('.gem-card')).toBeNull();
+
+      vi.advanceTimersByTime(800);
+      fixture.detectChanges();
+      expect(state()).toContain('m-open');
+      expect(el.querySelector('.gem-card')).not.toBeNull();
+    });
   });
 
   it('MineResult shows a gem after a crack', () => {

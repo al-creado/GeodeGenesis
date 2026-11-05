@@ -1,0 +1,126 @@
+<svg
+  [class]="'machine m-' + state()"
+  viewBox="0 0 260 320"
+  role="group"
+  aria-label="A gold gem machine has appeared in the cave"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <defs>
+    <linearGradient [attr.id]="uid + 'gold'" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE9A3" />
+      <stop offset="0.45" stop-color="#F2B84B" />
+      <stop offset="1" stop-color="#B97E1E" />
+    </linearGradient>
+    <linearGradient [attr.id]="uid + 'rock'" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1C120C" />
+      <stop offset="1" stop-color="#3A271B" />
+    </linearGradient>
+    <linearGradient [attr.id]="uid + 'beam'" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE9A3" stop-opacity="0.38" />
+      <stop offset="1" stop-color="#FFE9A3" stop-opacity="0" />
+    </linearGradient>
+    <radialGradient [attr.id]="uid + 'aura'">
+      <stop offset="0" [attr.stop-color]="glow()" stop-opacity="0.95" />
+      <stop offset="1" [attr.stop-color]="glow()" stop-opacity="0" />
+    </radialGradient>
+    <clipPath [attr.id]="uid + 'globe'"><circle cx="130" cy="112" r="49" /></clipPath>
+    <clipPath [attr.id]="uid + 'win'"><rect x="106" y="226" width="48" height="26" rx="6" /></clipPath>
+  </defs>
+
+  <!-- the cave alcove the machine appeared in -->
+  <g aria-hidden="true">
+    <path d="M10 296 V120 C10 40 60 6 130 6 C200 6 250 40 250 120 V296 Q250 318 228 318 H32 Q10 318 10 296 Z" [attr.fill]="'url(#' + uid + 'rock)'" />
+    <path d="M96 0 H164 L236 292 H24 Z" [attr.fill]="'url(#' + uid + 'beam)'" class="beam" />
+    @for (t of teeth; track $index) {
+      <path [attr.d]="'M' + (t[0] - 8) + ' ' + t[1] + ' L' + t[0] + ' ' + (t[1] + t[2]) + ' L' + (t[0] + 8) + ' ' + t[1] + ' Z'" fill="#1C120C" />
+    }
+    <ellipse cx="130" cy="284" rx="118" ry="22" fill="#4A3223" />
+    <ellipse cx="130" cy="278" rx="70" ry="8" fill="#000" opacity="0.35" />
+    <!-- crystals pushing out of the rock -->
+    <g stroke="#24160F" stroke-width="2.5" stroke-linejoin="round">
+      <path d="M22 290 L30 258 L40 290 Z" fill="#B58CFF" />
+      <path d="M36 290 L46 270 L54 290 Z" fill="#6FA8FF" />
+      <path d="M222 292 L231 262 L241 292 Z" fill="#3FC28F" />
+      <path d="M208 294 L214 276 L222 294 Z" fill="#FF6B8A" />
+    </g>
+    <circle cx="64" cy="292" r="5" fill="#5C402D" /><circle cx="198" cy="296" r="4" fill="#5C402D" /><circle cx="86" cy="298" r="3" fill="#5C402D" />
+  </g>
+
+  <g class="rig" stroke-linejoin="round" stroke-linecap="round">
+    <!-- feet and body -->
+    <rect x="82" y="256" width="24" height="16" rx="4" fill="#8A5A12" stroke="#24160F" stroke-width="3" />
+    <rect x="154" y="256" width="24" height="16" rx="4" fill="#8A5A12" stroke="#24160F" stroke-width="3" />
+    <rect x="72" y="164" width="116" height="96" rx="14" [attr.fill]="'url(#' + uid + 'gold)'" stroke="#24160F" stroke-width="3" />
+    <circle cx="82" cy="174" r="3" fill="#8A5A12" /><circle cx="178" cy="174" r="3" fill="#8A5A12" />
+    <circle cx="82" cy="250" r="3" fill="#8A5A12" /><circle cx="178" cy="250" r="3" fill="#8A5A12" />
+
+    <!-- coin plate -->
+    <rect x="86" y="180" width="62" height="38" rx="8" fill="#3A2616" stroke="#24160F" stroke-width="3" />
+    <circle cx="104" cy="199" r="9" fill="#F2B84B" stroke="#24160F" stroke-width="2.5" />
+    <path d="M104 193 V205 M100.5 197 H107.5" stroke="#24160F" stroke-width="2" fill="none" />
+    <text x="130" y="205" text-anchor="middle" font-family="Nunito, system-ui, sans-serif" font-weight="800" font-size="17" fill="#FFE9A3">{{ cost() }}</text>
+
+    <!-- dispenser window -->
+    <rect x="104" y="224" width="52" height="30" rx="8" fill="#1C120C" stroke="#24160F" stroke-width="3" />
+    <circle class="aura" cx="130" cy="240" r="74" [attr.fill]="'url(#' + uid + 'aura)'" />
+    <g [attr.clip-path]="state() === 'dropping' ? 'url(#' + uid + 'win)' : null">
+      <g class="capsule">
+        <g class="cap-top"><path d="M119 242 A11 11 0 0 1 141 242 Z" [attr.fill]="glow()" stroke="#24160F" stroke-width="2.5" /></g>
+        <g class="cap-bottom"><path d="M119 242 A11 11 0 0 0 141 242 Z" fill="#FFF6DC" stroke="#24160F" stroke-width="2.5" /></g>
+        <circle cx="125" cy="237" r="2.4" fill="#fff" />
+      </g>
+    </g>
+
+    <!-- marquee with bulbs and a gem on top -->
+    <path d="M130 12 L144 28 L130 40 L116 28 Z" fill="#CFE8FF" stroke="#24160F" stroke-width="3" />
+    <path d="M116 28 H144" stroke="#24160F" stroke-opacity="0.35" stroke-width="1.5" />
+    <rect x="70" y="36" width="120" height="28" rx="10" [attr.fill]="'url(#' + uid + 'gold)'" stroke="#24160F" stroke-width="3" />
+    @for (x of bulbs; track x; let i = $index) {
+      <circle class="bulb" [style.animation-delay.s]="(i % 2) * 0.7" [attr.cx]="x" cy="50" r="4.5" fill="#FFF6C8" stroke="#24160F" stroke-width="2" />
+    }
+
+    <!-- glass globe with capsules -->
+    <circle cx="130" cy="112" r="52" fill="#BFE4FF" fill-opacity="0.22" stroke="#24160F" stroke-width="3" />
+    <g [attr.clip-path]="'url(#' + uid + 'globe)'" class="balls">
+      @for (c of capsules; track $index; let i = $index) {
+        <g class="ball" [style.animation-delay.s]="(i % 4) * -0.2">
+          <circle [attr.cx]="c[0]" [attr.cy]="c[1]" r="10" [attr.fill]="c[2]" stroke="#24160F" stroke-width="2" />
+          <path [attr.d]="'M' + (c[0] - 10) + ' ' + c[1] + ' A10 10 0 0 0 ' + (c[0] + 10) + ' ' + c[1] + ' Z'" fill="#fff" fill-opacity="0.38" />
+          <circle [attr.cx]="c[0] - 4" [attr.cy]="c[1] - 4" r="1.8" fill="#fff" />
+        </g>
+      }
+    </g>
+    <path d="M94 88 A44 44 0 0 1 120 66" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="5" />
+    <rect x="86" y="150" width="88" height="16" rx="6" [attr.fill]="'url(#' + uid + 'gold)'" stroke="#24160F" stroke-width="3" />
+
+    <!-- lever -->
+    <rect x="186" y="186" width="12" height="20" rx="4" fill="#8A5A12" stroke="#24160F" stroke-width="2.5" />
+    <g
+      class="lever"
+      [class.enabled]="leverEnabled()"
+      role="button"
+      [attr.tabindex]="leverEnabled() ? 0 : -1"
+      [attr.aria-disabled]="!leverEnabled()"
+      aria-label="Pull the lever to mine one gem"
+      (click)="pull()"
+      (keydown.enter)="pull()"
+      (keydown.space)="pull(); $event.preventDefault()"
+    >
+      <g class="arm">
+        <line x1="196" y1="196" x2="222" y2="160" stroke="#24160F" stroke-width="10" />
+        <line x1="196" y1="196" x2="222" y2="160" stroke="#D9D9E3" stroke-width="5" />
+        <circle cx="222" cy="160" r="11" fill="#FF6B8A" stroke="#24160F" stroke-width="3" />
+        <circle cx="218" cy="156" r="3" fill="#fff" fill-opacity="0.8" />
+      </g>
+      <circle cx="196" cy="196" r="10" [attr.fill]="'url(#' + uid + 'gold)'" stroke="#24160F" stroke-width="3" />
+      <circle cx="196" cy="196" r="26" fill="transparent" />
+    </g>
+  </g>
+
+  <!-- sparkles when a capsule pops open -->
+  <g class="sparkles" fill="#FFF6DC" aria-hidden="true">
+    <g transform="translate(96 214)"><path class="sp s1" d="M0 -8 L2.4 -2.4 L8 0 L2.4 2.4 L0 8 L-2.4 2.4 L-8 0 L-2.4 -2.4 Z" /></g>
+    <g transform="translate(166 208)"><path class="sp s2" d="M0 -6 L1.8 -1.8 L6 0 L1.8 1.8 L0 6 L-1.8 1.8 L-6 0 L-1.8 -1.8 Z" /></g>
+    <g transform="translate(130 206)"><path class="sp s3" d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" /></g>
+  </g>
+</svg>

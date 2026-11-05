@@ -8,10 +8,12 @@ import { ToastService } from '../services/toast.service';
 import { AdNote } from '../ui/ad-note';
 import { luckPct, RARITY_LABEL } from '../ui/format';
 import { GemArt } from '../ui/gem-art';
-import { GeodeArt } from '../ui/geode-art';
+import { GoldMachine, MachineState } from '../ui/gold-machine';
 import { ART } from '../core/gem-art';
 
-const REVEAL_MS = 1300;
+/** Lever pull, then the capsule drops, then it pops open. */
+const PULL_MS = 850;
+const DROP_MS = 750;
 const GLOW: Record<Rarity, string> = {
   quartz: ART.frame.quartz,
   amethyst: ART.palette.amethyst,
@@ -23,7 +25,7 @@ const GLOW: Record<Rarity, string> = {
 @Component({
   selector: 'app-mine-result',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [GemArt, GeodeArt, AdNote, RouterLink],
+  imports: [GemArt, GoldMachine, AdNote, RouterLink],
   templateUrl: './mine-result.html',
   styleUrl: './mine-result.scss',
 })
@@ -37,6 +39,8 @@ export class MineResult implements OnInit {
   protected readonly label = RARITY_LABEL;
   protected readonly luckPct = luckPct;
   protected readonly revealed = signal(false);
+  protected readonly phase = signal<'pull' | 'drop'>('pull');
+  protected readonly machine = computed<MachineState>(() => (this.revealed() ? 'open' : this.phase() === 'pull' ? 'pulling' : 'dropping'));
   protected readonly batch = this.game.lastBatch;
 
   /** Best rarity in the batch decides the glow color. */
@@ -98,7 +102,11 @@ export class MineResult implements OnInit {
       return;
     }
     this.revealed.set(false);
-    this.timer = setTimeout(() => this.revealed.set(true), REVEAL_MS);
+    this.phase.set('pull');
+    this.timer = setTimeout(() => {
+      this.phase.set('drop');
+      this.timer = setTimeout(() => this.revealed.set(true), DROP_MS);
+    }, PULL_MS);
   }
 
   private clearTimer(): void {

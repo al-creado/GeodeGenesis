@@ -2,13 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { Router, RouterLink } from '@angular/router';
 import { RARITIES } from '../core/config';
 import { GameStateService, CrackCount } from '../services/game-state.service';
-import { GeodeArt } from '../ui/geode-art';
+import { GoldMachine } from '../ui/gold-machine';
 import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
 
 @Component({
   selector: 'app-mine',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, GeodeArt],
+  imports: [RouterLink, GoldMachine],
   templateUrl: './mine.html',
   styleUrl: './mine.scss',
 })

@@ -120,7 +120,7 @@ async function main() {
     <svg style="position:absolute;left:0;top:0" width="1024" height="500" viewBox="0 0 1024 500">${stalactites(1024, 330)}</svg>
     <div style="position:absolute;left:0;right:0;top:92px;text-align:center">
       <div style="font-weight:800;font-size:92px;color:#F2B84B;letter-spacing:1px;text-shadow:0 5px 0 #24160F">Geode Genesis</div>
-      <div style="font-weight:700;font-size:34px;margin-top:6px">Crack geodes. Collect cute gems.</div>
+      <div style="font-weight:700;font-size:34px;margin-top:6px">Pull the lever. Collect cute gems.</div>
     </div>
     <div style="position:absolute;left:0;right:0;bottom:34px;display:flex;justify-content:center;gap:22px">
       ${gems.map((g) => `<svg width="150" height="150" viewBox="0 0 120 120" style="overflow:visible">${g}</svg>`).join('')}
@@ -150,6 +150,7 @@ async function main() {
   await shot('/camp', '1-camp.png');
   await shot('/mine', '2-mine.png');
   await shot('/mine', '3-mine-x10.png', async () => {
+    await shotPage.evaluate(() => undefined);
     await shotPage.getByRole('button', { name: /Mine x10/ }).click();
     await shotPage.waitForSelector('.revealed', { timeout: 5000 });
     await shotPage.waitForTimeout(900);
