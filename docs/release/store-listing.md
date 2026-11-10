@@ -8,14 +8,14 @@ Pull the lever of a gold gem machine hidden in a cave. Collect cute gems!
 **Full description** (max 4000):
 A gold gem machine has appeared deep in a cozy cave. Pull its lever and discover adorable gem friends!
 
-Geode Genesis is a relaxed collecting game. Claim a free pull every day, collect login rewards and goals, then pull the lever to win gems of five rarities: Quartz, Amethyst, Emerald, Ruby and the one and only Diamond. Every gem has its own cute face and a little story.
+Geode Genesis is a relaxed collecting game. Take your free pulls, collect login rewards and goals, then pull the lever to win gems of five rarities: Quartz, Amethyst, Emerald, Ruby and the one and only Diamond. Every gem has its own cute face and a little story.
 
 * COLLECT 24 gems with different shapes, colors and personalities, drawn with love.
 * BUILD YOUR LUCKY CREW. Put your favorite gems in your crew to add luck to every pull. Higher gem levels, completed sets and collection rewards add more. Unlock more crew slots with shards.
 * LEVEL UP your gems by finding duplicates. Extra copies at max level turn into shards.
 * NEVER STUCK. Every 150 pulls you can choose any gem you want, and shards can buy a gem you are missing.
 * NEVER LEAVE EMPTY-HANDED. Pity timers guarantee an Emerald or better within 10 pulls and a Ruby or better within 50.
-* FREE EVERY DAY. Your first pull is free, and so is one pull every day. A forgiving login calendar and daily goals keep the rewards coming.
+* FREE PULLS ALL DAY. Your first pull is free, and a free pull comes back every few hours. Gems in your crew can shorten the wait, and you can speed it up with shards or an optional ad. A forgiving login calendar and daily goals keep the rewards coming.
 * FAIR AND OPEN. Full drop rates and pity rules are always on the Settings and Rates screen.
 
 No real-money purchases. Optional rewarded ads can double your coin rewards, and they never change your pull odds. Contains ads.

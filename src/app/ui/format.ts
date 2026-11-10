@@ -28,6 +28,11 @@ export function luckPct(luck: number): string {
   return `+${parseFloat((luck * 100).toFixed(2))}%`;
 }
 
+/** Wait cut as a fraction: 0.02 -> "-2%". */
+export function timerPct(cut: number): string {
+  return `-${parseFloat((cut * 100).toFixed(2))}%`;
+}
+
 /** "3h 12m" / "45m" / "20s". */
 export function formatDuration(ms: number): string {
   const totalSeconds = Math.ceil(ms / 1000);

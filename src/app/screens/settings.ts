@@ -5,7 +5,7 @@ import { RARITIES } from '../core/config';
 import { AdService } from '../services/ad.service';
 import { CloudSyncService } from '../services/cloud-sync.service';
 import { GameStateService } from '../services/game-state.service';
-import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
+import { formatDuration, luckPct, pct, RARITY_COLOR, RARITY_LABEL, timerPct } from '../ui/format';
 
 /** Settings plus the full rates and pity rules (required by Google Play). */
 @Component({
@@ -26,6 +26,8 @@ export class Settings {
   protected readonly label = RARITY_LABEL;
   protected readonly luckPct = luckPct;
   protected readonly pct = pct;
+  protected readonly formatDuration = formatDuration;
+  protected readonly timerPct = timerPct;
   protected readonly capText = luckPct(this.cfg.crew.luckCap);
   protected readonly maxLevelMultiplier = Math.round((1 + this.cfg.progression.levelLuckFactor * (this.cfg.duplicates.maxLevel - 1)) * 100) / 100;
   protected readonly confirmReset = signal(false);

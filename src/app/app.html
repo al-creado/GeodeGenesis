@@ -38,9 +38,9 @@
         <span>Daily</span>
       </button>
     }
-    <a routerLink="/mine" routerLinkActive="active" aria-label="Mine">
+    <a routerLink="/pulls" routerLinkActive="active" aria-label="Pulls">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19 14 10" /><path d="M14 6l4 4" /><path d="M7 5c5-1.5 11 1 13 8" /></svg>
-      <span>Mine</span>
+      <span>Pulls</span>
     </a>
     @if (game.unlocks().vault) {
       <a routerLink="/vault" routerLinkActive="active" aria-label="Vault">
@@ -66,5 +66,4 @@
     }
   </nav>
 </div>
-<app-ad-dialog />
 <app-intro-dialog />

@@ -87,8 +87,3 @@ export function claimDaily(
     reward: config.economy.streakRewards[next.day - 1],
   };
 }
-
-/** One free pull per local day. */
-export function freePullAvailable(lastFreePullDay: number | null, today: number): boolean {
-  return lastFreePullDay === null || today > lastFreePullDay;
-}

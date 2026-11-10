@@ -40,7 +40,8 @@
 <section class="card" aria-labelledby="free-h">
   <h2 id="free-h">Free pulls, spark and exchange</h2>
   <ul>
-    <li>Your first pull is free, and you get one free pull every day. They use the same odds as paid pulls.</li>
+    <li>Your first pull is free, and a free pull comes back every {{ formatDuration(cfg.freePull.cooldownMs) }}. Free pulls use the same odds as paid pulls.</li>
+    <li>You can shorten that wait: gems in your Lucky Crew cut it (up to {{ timerPct(cfg.freePull.maxReduction) }} in total), spending {{ cfg.freePull.shardCost }} shards takes off {{ formatDuration(cfg.freePull.shardReduceMs) }}@if (ads.supported) {, and watching a rewarded ad takes off {{ formatDuration(cfg.freePull.adReduceMs) }}}.</li>
     <li>Every {{ cfg.shop.sparkAt }} pulls you can choose any gem (a spark). It does not reset your pity.</li>
     <li>Shards can buy a gem you have not found yet. Prices:
       @for (r of rows(); track r.rarity; let last = $last) { {{ label[r.rarity] }} {{ cfg.shop.exchangeShards[r.rarity] }}@if (!last) {, } }.
@@ -69,10 +70,11 @@
   </ul>
 </section>
 
+@if (ads.supported) {
 <section class="card" aria-labelledby="ads-h">
   <h2 id="ads-h">Ads</h2>
   <p class="strong">Ads are optional and never change your pull odds.</p>
-  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the login calendar and on the bonus after a pull.</p>
+  <p class="muted">Watching a rewarded ad multiplies coin rewards (x{{ cfg.economy.adMultiplier }}) on the login calendar and on the bonus after a pull, and shortens the free-pull wait by {{ formatDuration(cfg.freePull.adReduceMs) }}.</p>
   <label class="toggle">
     <input type="checkbox" [checked]="game.adsEnabled()" (change)="setAds($event)" />
     <span>Offer rewarded ads</span>
@@ -81,6 +83,7 @@
     <button type="button" class="btn btn-quiet" (click)="privacyOptions()">Ad privacy options</button>
   }
 </section>
+}
 
 <section class="card" aria-labelledby="cloud-h">
   <h2 id="cloud-h">Cloud save</h2>

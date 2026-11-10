@@ -23,8 +23,8 @@ describe('crewMembers', () => {
   it('maps crew ids to rarity and level, ignoring unknown or unowned gems', () => {
     const c = { plum: { level: 4 }, ember: { level: 1 } };
     expect(crewMembers(['plum', 'ember', 'ghost', 'halo'], c, ROSTER)).toEqual([
-      { rarity: 'amethyst', level: 4 },
-      { rarity: 'ruby', level: 1 },
+      { id: 'plum', rarity: 'amethyst', level: 4 },
+      { id: 'ember', rarity: 'ruby', level: 1 },
     ]);
   });
 });

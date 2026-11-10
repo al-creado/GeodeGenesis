@@ -57,6 +57,21 @@ describe('applyRemoteOverrides', () => {
     expect(ok.config.economy.streakRewards[6]).toEqual({ tenTickets: 2 });
   });
 
+  it('validates the free-pull wait numbers', () => {
+    const ok = applyRemoteOverrides(GAME_CONFIG, { freePull: { cooldownMs: 7_200_000, adReduceMs: 1_800_000, shardCost: 2, maxReduction: 0.4 } });
+    expect(ok.applied).toEqual(['freePull']);
+    expect(ok.config.freePull.cooldownMs).toBe(7_200_000);
+    expect(ok.config.freePull.shardReduceMs).toBe(GAME_CONFIG.freePull.shardReduceMs);
+    for (const bad of [{ cooldownMs: 1000 }, { adReduceMs: -1 }, { shardCost: 0 }, { maxReduction: 0.95 }, { maxReduction: -0.1 }]) {
+      expect(applyRemoteOverrides(GAME_CONFIG, { freePull: bad }).rejected).toEqual(['freePull']);
+    }
+  });
+
+  it('can never change the passive timer cuts of gems', () => {
+    const r = applyRemoteOverrides(GAME_CONFIG, { timerReductionPerGem: { quartz: 0.5 } });
+    expect(r.config.timerReductionPerGem).toBe(GAME_CONFIG.timerReductionPerGem);
+  });
+
   it('validates the shop numbers', () => {
     const ok = applyRemoteOverrides(GAME_CONFIG, { shop: { sparkAt: 200, exchangeShards: { diamond: 800 } } });
     expect(ok.config.shop.sparkAt).toBe(200);

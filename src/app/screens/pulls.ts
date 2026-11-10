@@ -3,22 +3,23 @@ import { Router, RouterLink } from '@angular/router';
 import { RARITIES } from '../core/config';
 import { CrackCount, GameStateService, PullSource } from '../services/game-state.service';
 import { GoldMachine } from '../ui/gold-machine';
-import { luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
+import { formatDuration, luckPct, pct, RARITY_COLOR, RARITY_LABEL } from '../ui/format';
 
 @Component({
-  selector: 'app-mine',
+  selector: 'app-pulls',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, GoldMachine],
-  templateUrl: './mine.html',
-  styleUrl: './mine.scss',
+  templateUrl: './pulls.html',
+  styleUrl: './pulls.scss',
 })
-export class Mine {
+export class Pulls {
   protected readonly game = inject(GameStateService);
   private readonly router = inject(Router);
 
   protected readonly cfg = this.game.config;
   protected readonly color = RARITY_COLOR;
   protected readonly pct = pct;
+  protected readonly formatDuration = formatDuration;
   protected readonly luckText = computed(() => luckPct(this.game.luck()));
   protected readonly savings = this.cfg.economy.crackCost1 * 10 - this.cfg.economy.crackCost10;
 
@@ -36,6 +37,6 @@ export class Mine {
   });
 
   protected crack(count: CrackCount, source: PullSource = 'coins'): void {
-    if (this.game.crack(count, source)) void this.router.navigate(['/mine/result']);
+    if (this.game.crack(count, source)) void this.router.navigate(['/pulls/result']);
   }
 }

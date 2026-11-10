@@ -1,5 +1,7 @@
 import { GAME_CONFIG, GameConfig, RARITIES, Reward } from './config';
-import { applyMultiplier, claimDaily, DailyState, freePullAvailable, INITIAL_DAILY, localWeekNumber, postCrackBonus, scaleReward } from './economy';
+import { applyMultiplier, claimDaily, DailyState, INITIAL_DAILY, localWeekNumber, postCrackBonus, scaleReward } from './economy';
+import { crewTimerReduction } from './passives';
+import { boostFreePull, effectiveCooldownMs, freePullRemainingMs, FreePullState, INITIAL_FREE_PULL, startFreePullWait } from './timer';
 import { claimGoal, goalViews, GoalState, INITIAL_GOALS, recordPulls, rollGoals } from './goals';
 import { computeLuck, rarityRank } from './odds';
 import { claimMilestone, crewMembers, gemLuck, permanentLuck } from './progression';
@@ -14,16 +16,18 @@ export interface PlayerProfile {
   readonly name: string;
   /** Which days of the week (Monday first) the player opens the game. */
   readonly weekPattern: readonly boolean[];
-  /** Watches a rewarded ad for every x2 offer (streak coins and the post-pull bonus). */
+  /** How many times on a play day the player opens the game (spread evenly over 24 hours). */
+  readonly visitsPerDay: number;
+  /** Watches a rewarded ad for every offer: x2 streak coins and post-pull bonus, and -1h on the free-pull wait. */
   readonly watchAds: boolean;
 }
 
 const ALL_DAYS = [true, true, true, true, true, true, true];
 
 export const PROFILES: readonly PlayerProfile[] = [
-  { name: 'Occasional (2 days/week, no ads)', weekPattern: [true, false, false, false, true, false, false], watchAds: false },
-  { name: 'Casual (3 days/week, no ads)', weekPattern: [true, false, true, false, true, false, false], watchAds: false },
-  { name: 'Regular (every day, ads)', weekPattern: ALL_DAYS, watchAds: true },
+  { name: 'Occasional (2 days/week, 1 visit, no ads)', weekPattern: [true, false, false, false, true, false, false], visitsPerDay: 1, watchAds: false },
+  { name: 'Casual (3 days/week, 1 visit, no ads)', weekPattern: [true, false, true, false, true, false, false], visitsPerDay: 1, watchAds: false },
+  { name: 'Regular (every day, 3 visits, ads)', weekPattern: ALL_DAYS, visitsPerDay: 3, watchAds: true },
 ];
 
 export interface SimResult {
@@ -38,7 +42,8 @@ export interface SimResult {
 
 /**
  * Play the game for `days` days with a fixed strategy and report when milestones happen.
- * Strategy: on a play day, claim the streak and goals, take the free pull, spend every coin
+ * Strategy: on a play day, claim the calendar and goals; at every visit take the free pull when it is
+ * ready (watching an ad to shorten the wait if the player watches ads), spend every coin
  * (x10 when affordable), use tickets, claim milestones, spend sparks and shards on the rarest
  * missing gems, and keep the best gems in the crew.
  */
@@ -60,7 +65,7 @@ export function simulatePlayer(
   let collection: Collection = {};
   let pity: PityState = INITIAL_PITY;
   let daily: DailyState = INITIAL_DAILY;
-  let freePullDay: number | null = null;
+  let freePull: FreePullState = INITIAL_FREE_PULL;
   let goals: GoalState = INITIAL_GOALS;
   let claimedMilestones: number[] = [];
   let spark = 0;
@@ -178,11 +183,19 @@ export function simulatePlayer(
         daily = claim.daily;
         give(scaleReward(claim.reward, mult));
       }
-      if (freePullAvailable(freePullDay, dayNum)) {
-        freePullDay = dayNum;
-        pull(1);
+      for (let visit = 0; visit < profile.visitsPerDay; visit++) {
+        const nowMs = (day * 24 + (visit * 24) / profile.visitsPerDay) * 3_600_000;
+        const cooldown = effectiveCooldownMs(crewTimerReduction(crewMembers(bestCrew(), collection, roster), config), config);
+        if (profile.watchAds && freePullRemainingMs(freePull, nowMs, cooldown) > 0) {
+          const b = boostFreePull(freePull, nowMs, cooldown, config.freePull.adReduceMs);
+          if (b) freePull = b.state;
+        }
+        if (freePullRemainingMs(freePull, nowMs, cooldown) === 0) {
+          freePull = startFreePullWait(nowMs);
+          pull(1);
+        }
+        for (let guard = 0; guard < 500 && actOnce(); guard++);
       }
-      for (let guard = 0; guard < 500 && actOnce(); guard++);
     }
     const owned = Object.keys(collection).length;
     for (let n = 1; n <= owned; n++) if (dayOwned[n] === null) dayOwned[n] = day;

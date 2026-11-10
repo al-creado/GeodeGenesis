@@ -9,18 +9,26 @@
       <button type="button" class="btn glow" (click)="crack(1)">Your first pull is free!</button>
     } @else {
       <button type="button" class="btn" [disabled]="!game.canAfford(1)" (click)="crack(1)">
-        Mine x1 &middot; {{ cfg.economy.crackCost1 }} coins
+        Pull x1 &middot; {{ cfg.economy.crackCost1 }} coins
       </button>
     }
     <button type="button" class="btn" [disabled]="!game.canAfford(10)" (click)="crack(10)">
-      Mine x10 &middot; {{ cfg.economy.crackCost10 }} coins
+      Pull x10 &middot; {{ cfg.economy.crackCost10 }} coins
     </button>
+    @if (game.unlocks().daily) {
+      @if (game.freePullReady()) {
+        <button type="button" class="btn glow" (click)="crack(1, 'daily')">Free pull ready! Pull for free</button>
+      }
+    }
     @if (game.tenTickets() > 0) {
       <button type="button" class="btn glow" (click)="crack(10, 'ticket')">
         Use a free x10 pull ({{ game.tenTickets() }})
       </button>
     }
   </div>
+  @if (game.unlocks().daily && !game.freePullReady()) {
+    <p class="muted small center">Next free pull in {{ formatDuration(game.freePullRemainingMs()) }}. <a routerLink="/daily">Shorten the wait</a></p>
+  }
   <p class="muted small center">
     @if (!game.firstPullFree()) { x10 saves {{ savings }} coins. }
     @if (!game.canAfford(1) && !game.firstPullFree()) {

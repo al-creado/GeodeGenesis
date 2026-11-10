@@ -1,12 +1,11 @@
 import { computed, DestroyRef, inject, Injectable, signal } from '@angular/core';
-import { Reward } from '../core/config';
+import { Rarity, Reward } from '../core/config';
 import { addToCrew, nextSlotCost, removeFromCrew, unlockSlot } from '../core/crew';
 import {
   applyMultiplier,
   claimDaily,
   dailyCells,
   dailyNext,
-  freePullAvailable,
   localDayNumber,
   localWeekNumber,
   postCrackBonus,
@@ -15,6 +14,8 @@ import {
 } from '../core/economy';
 import { claimGoal, goalViews, recordPulls, rollGoals } from '../core/goals';
 import { adjustedOdds, computeLuck } from '../core/odds';
+import { crewTimerReduction, CrewPreview, previewCrewChange } from '../core/passives';
+import { boostFreePull, effectiveCooldownMs, freePullRemainingMs } from '../core/timer';
 import { claimMilestone, crewMembers, gemLuck, milestoneStates, permanentLuck, setStates } from '../core/progression';
 import { CrackResult, DuplicateOutcome } from '../core/pull';
 import { createNewSave, migrateSave, SaveData } from '../core/save';
@@ -99,11 +100,17 @@ export class GameStateService {
     return { crew, sets: perm.sets, milestones: perm.milestones, total: computeLuck(members, this.config, perm.total) };
   });
   readonly luck = computed(() => this.luckParts().total);
+  /** The crew's gems with their levels. */
+  readonly crewMembers = computed(() => crewMembers(this.crew(), this.collection(), ROSTER));
+  /** The crew's passive cut to the free-pull wait (capped). */
+  readonly timerReduction = computed(() => crewTimerReduction(this.crewMembers(), this.config));
   readonly odds = computed(() => adjustedOdds(this.luck(), this.config));
   readonly baseOdds = adjustedOdds(0, this.config);
 
   /** Whether the UI should offer rewarded ads right now. */
-  readonly adsAvailable = computed(() => this.adsEnabled() && this.ads.isAvailable());
+  readonly adsAvailable = computed(() => this.adsEnabled() && this.ads.available());
+  /** True when this build can show ads at all (the Android app). The browser has none. */
+  readonly adsSupported = this.ads.supported;
   /** True while an ad is playing, to block double taps. */
   readonly adBusy = signal(false);
 
@@ -117,7 +124,15 @@ export class GameStateService {
   private readonly thisWeek = computed(() => localWeekNumber(this.today()));
   readonly dailyRow = computed(() => dailyCells(this.state().daily, this.today(), this.config));
   readonly dailyNext = computed(() => dailyNext(this.state().daily, this.today(), this.config));
-  readonly freePullReady = computed(() => freePullAvailable(this.state().freePullDay, this.today()));
+  /** The free-pull wait after the crew's passive cut. */
+  readonly freeCooldownMs = computed(() => effectiveCooldownMs(this.timerReduction(), this.config));
+  readonly freePullRemainingMs = computed(() =>
+    freePullRemainingMs({ lastAt: this.state().freePullAt, boostMs: this.state().freePullBoostMs }, this.nowMs(), this.freeCooldownMs()),
+  );
+  readonly freePullReady = computed(() => this.freePullRemainingMs() === 0);
+  /** How far through the wait we are, 0..1. */
+  readonly freePullFill = computed(() => 1 - Math.min(this.freePullRemainingMs() / this.freeCooldownMs(), 1));
+  readonly canPayShardsForTimer = computed(() => !this.freePullReady() && this.shards() >= this.config.freePull.shardCost);
 
   // Goals, milestones, sets
   readonly goals = computed(() => goalViews(rollGoals(this.state().goals, this.today(), this.thisWeek(), this.config), this.config));
@@ -180,7 +195,7 @@ export class GameStateService {
       tenTickets: source === 'ticket' ? s.tenTickets - 1 : s.tenTickets,
       collection: batch.collection,
       pity: batch.pity,
-      freePullDay: source === 'daily' ? day : s.freePullDay,
+      ...(source === 'daily' ? { freePullAt: now, freePullBoostMs: 0 } : {}),
       goals: recordPulls(rolled, batch.results.map((r) => r.gem.rarity), this.config),
       sparkProgress: s.sparkProgress + count,
       totalCracks: s.totalCracks + count,
@@ -202,6 +217,31 @@ export class GameStateService {
     this.commit({ ...this.state(), coins: this.state().coins + extra });
     this.lastBatch.set({ ...batch, bonusBoosted: true });
     return extra;
+  }
+
+  /** Watch a rewarded ad to take time off the free-pull wait. Returns the time taken off (ms). */
+  async reduceFreePullWithAd(): Promise<number> {
+    if (this.freePullReady() || !(await this.watchAd('freePull'))) return 0;
+    return this.applyBoost(this.config.freePull.adReduceMs);
+  }
+
+  /** Pay shards to take time off the free-pull wait. Returns the time taken off (ms). */
+  reduceFreePullWithShards(): number {
+    const s = this.state();
+    if (this.freePullReady() || s.shards < this.config.freePull.shardCost) return 0;
+    const reduced = this.applyBoost(this.config.freePull.shardReduceMs, s.shards - this.config.freePull.shardCost);
+    return reduced;
+  }
+
+  /**
+   * What the crew's luck and free-pull wait would be if this gem were added or removed.
+   * `candidate` previews a gem that is not in the crew (an unowned gem counts as level 1).
+   */
+  previewCrew(gemId: string | null, candidate: { rarity: Rarity; level: number } | null): CrewPreview {
+    const members = this.crewMembers();
+    const perm = this.luckParts().sets + this.luckParts().milestones;
+    if (gemId && this.crew().includes(gemId)) return previewCrewChange(members, perm, { removeId: gemId }, this.config);
+    return previewCrewChange(members, perm, { add: { id: gemId ?? undefined, ...(candidate ?? { rarity: 'quartz' as Rarity, level: 1 }) } }, this.config);
   }
 
   /** Claim today's login-calendar reward. With an ad, its coins are multiplied. Returns what was granted. */
@@ -338,6 +378,17 @@ export class GameStateService {
     } finally {
       this.adBusy.set(false);
     }
+  }
+
+  /** Take up to `ms` off the wait. Optionally also set the shard balance in the same save. */
+  private applyBoost(ms: number, shards?: number): number {
+    const s = this.state();
+    const now = this.clock();
+    const b = boostFreePull({ lastAt: s.freePullAt, boostMs: s.freePullBoostMs }, now, this.freeCooldownMs(), ms);
+    if (!b) return 0;
+    this.commit({ ...s, freePullBoostMs: b.state.boostMs, ...(shards === undefined ? {} : { shards }) });
+    this.nowMs.set(now);
+    return b.reducedMs;
   }
 
   private give(s: SaveData, r: Reward): SaveData {

@@ -130,14 +130,14 @@ async function main() {
 
   // ---- Phone screenshots from the live app ----
   const shotPage = await browser.newPage({ viewport: { width: 360, height: 720 }, deviceScaleFactor: 3 });
-  await shotPage.goto(`http://localhost:${PORT}/mine`);
+  await shotPage.goto(`http://localhost:${PORT}/pulls`);
   await shotPage.evaluate(() => {
     const dayNum = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
     const lv = { pebble: 3, frost: 2, honey: 1, mochi: 1, pip: 2, biscuit: 1, plum: 4, bluebell: 2, lilac: 1, wisp: 1, fern: 2, clover: 1, ember: 1, cherry: 1, halo: 1 };
     const collection = Object.fromEntries(Object.entries(lv).map(([k, v]) => [k, { level: v }]));
     localStorage.setItem('geode-genesis-save', JSON.stringify({
-      version: 4, coins: 1840, shards: 24, collection, pity: { sinceEmerald: 6, sinceRuby: 21 },
-      crew: ['halo', 'ember', 'fern'], crewSlots: 3, tenTickets: 1, freePullDay: null, goals: { day: -1, week: -1, dailyPulls: 0, dailyRare: 0, weeklyPulls: 0, claimed: [] }, claimedMilestones: [6], sparkProgress: 61,
+      version: 5, coins: 1840, shards: 24, collection, pity: { sinceEmerald: 6, sinceRuby: 21 },
+      crew: ['halo', 'ember', 'fern'], crewSlots: 3, tenTickets: 1, freePullAt: Date.now() - 3600000, freePullBoostMs: 0, goals: { day: -1, week: -1, dailyPulls: 0, dailyRare: 0, weeklyPulls: 0, claimed: [] }, claimedMilestones: [6], sparkProgress: 61,
       daily: { claimedDay: 3, lastClaimDay: dayNum - 1 }, totalCracks: 61, settings: { adsEnabled: true, introSeen: true, cloudSave: true }, savedAt: Date.now(),
     }));
   });
@@ -148,10 +148,10 @@ async function main() {
     await shotPage.screenshot({ path: path.join(STORE, 'screenshots', name) });
   };
   await shot('/daily', '1-daily.png');
-  await shot('/mine', '2-mine.png');
-  await shot('/mine', '3-mine-x10.png', async () => {
+  await shot('/pulls', '2-pulls.png');
+  await shot('/pulls', '3-pulls-x10.png', async () => {
     await shotPage.evaluate(() => undefined);
-    await shotPage.getByRole('button', { name: /Mine x10/ }).click();
+    await shotPage.getByRole('button', { name: /Pull x10/ }).click();
     await shotPage.waitForSelector('.revealed', { timeout: 5000 });
     await shotPage.waitForTimeout(900);
   });

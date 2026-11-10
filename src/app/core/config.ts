@@ -44,6 +44,19 @@ export interface GameConfig {
     /** Coin bonus granted per paid pull (a rewarded ad multiplies it). */
     readonly postCrackBonus: number;
   };
+  /** The free pull: it comes back after a wait that can be shortened. */
+  readonly freePull: {
+    /** Base wait between free pulls, in milliseconds. */
+    readonly cooldownMs: number;
+    /** Time one rewarded ad takes off the wait. */
+    readonly adReduceMs: number;
+    /** Time one shard payment takes off the wait. */
+    readonly shardReduceMs: number;
+    /** Shards paid for one reduction. */
+    readonly shardCost: number;
+    /** The most the crew's passive timer reduction can cut, as a fraction (0.5 = half). */
+    readonly maxReduction: number;
+  };
   readonly goals: {
     readonly daily: readonly GoalDef[];
     readonly weekly: readonly GoalDef[];
@@ -76,6 +89,8 @@ export interface GameConfig {
   readonly baseOdds: Readonly<Record<Rarity, number>>;
   /** Luck added per crew gem of each rarity, as a fraction (0.002 = +0.2%). */
   readonly luckPerGem: Readonly<Record<Rarity, number>>;
+  /** Passive free-pull wait cut per crew gem of each rarity at level 1, as a fraction (0.02 = 2%). Grows with level like luck. */
+  readonly timerReductionPerGem: Readonly<Record<Rarity, number>>;
   readonly crew: {
     readonly startSlots: number;
     readonly maxSlots: number;
@@ -91,8 +106,8 @@ export interface GameConfig {
     readonly rubyOrBetter: number;
   };
   readonly ads: {
-    /** Length of the fake ad shown by the browser-only Simulated provider. */
-    readonly simulatedDurationMs: number;
+    /** How long to wait before asking for another rewarded ad after one failed to load. */
+    readonly retryMs: number;
     /** How long to wait for a rewarded ad to load before giving up. */
     readonly loadTimeoutMs: number;
     /**
@@ -121,7 +136,7 @@ export interface GameConfig {
 }
 
 export const GAME_CONFIG: GameConfig = {
-  saveVersion: 4,
+  saveVersion: 5,
   economy: {
     startingCoins: 300,
     crackCost1: 100,
@@ -133,6 +148,7 @@ export const GAME_CONFIG: GameConfig = {
     ],
     postCrackBonus: 3,
   },
+  freePull: { cooldownMs: 4 * 3_600_000, adReduceMs: 3_600_000, shardReduceMs: 3_600_000, shardCost: 3, maxReduction: 0.5 },
   goals: {
     rareFrom: 'amethyst',
     daily: [
@@ -164,9 +180,10 @@ export const GAME_CONFIG: GameConfig = {
     ruby: 0.02,
     diamond: 0.03,
   },
+  timerReductionPerGem: { quartz: 0, amethyst: 0.02, emerald: 0.04, ruby: 0.06, diamond: 0.1 },
   crew: { startSlots: 3, maxSlots: 5, luckCap: 0.15, slotUnlockShards: [50, 150] },
   ads: {
-    simulatedDurationMs: 3000,
+    retryMs: 30000,
     loadTimeoutMs: 15000,
     admob: {
       // Google's published sample ids for Android.

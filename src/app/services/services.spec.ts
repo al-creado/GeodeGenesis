@@ -1,4 +1,4 @@
-import { WritableSignal } from '@angular/core';
+import { signal, WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GAME_CONFIG } from '../core/config';
@@ -7,7 +7,7 @@ import { Collection } from '../core/pull';
 import { createSequenceRng } from '../core/rng';
 import { ROSTER } from '../core/roster';
 import { createNewSave, SaveData } from '../core/save';
-import { AdPlacement, AdService, NoAdsService, SimulatedAdService } from './ad.service';
+import { AdPlacement, AdService, NoAdsService } from './ad.service';
 import { GameStateService } from './game-state.service';
 import { ToastService } from './toast.service';
 import { LocalStorageSaveService, SAVE_KEY, SaveService } from './save.service';
@@ -26,11 +26,12 @@ class MemorySave extends SaveService {
 }
 
 class FakeAds extends AdService {
-  available = true;
+  override readonly supported = true;
+  /** Whether a rewarded ad is loaded right now. */
+  override readonly available = signal(true);
   /** What the next ad returns: true = reward callback fired. */
   reward = true;
   shown: AdPlacement[] = [];
-  override isAvailable(): boolean { return this.available; }
   override async showRewarded(p: AdPlacement): Promise<boolean> { this.shown.push(p); return this.reward; }
 }
 
@@ -161,8 +162,10 @@ describe('GameStateService', () => {
     });
   });
 
-  describe('free daily pull', () => {
-    it('costs nothing, gives no bonus, and is limited to once a day', () => {
+  describe('free pull timer', () => {
+    const FP = GAME_CONFIG.freePull;
+
+    it('starts ready, costs nothing, gives no bonus, then needs a wait', () => {
       const g = setup(played());
       expect(g.freePullReady()).toBe(true);
       const b = g.crack(1, 'daily')!;
@@ -170,15 +173,141 @@ describe('GameStateService', () => {
       expect(b.bonus).toBe(0);
       expect(g.coins()).toBe(E.startingCoins);
       expect(g.freePullReady()).toBe(false);
+      expect(g.freePullRemainingMs()).toBe(FP.cooldownMs);
       expect(g.crack(1, 'daily')).toBeNull();
-      advanceDays(g, 1);
+    });
+
+    it('counts down in real time and is ready again after the wait', () => {
+      const g = setup(played());
+      g.crack(1, 'daily');
+      now += FP.cooldownMs - 60_000;
+      g.refreshClock();
+      expect(g.freePullRemainingMs()).toBe(60_000);
+      expect(g.freePullReady()).toBe(false);
+      now += 60_000;
+      g.refreshClock();
       expect(g.freePullReady()).toBe(true);
       expect(g.crack(1, 'daily')).not.toBeNull();
     });
 
+    it('is much shorter than a day', () => {
+      expect(FP.cooldownMs).toBeLessThan(8 * H);
+    });
+
     it('only works for a single pull', () => {
+      expect(setup(played()).crack(10, 'daily')).toBeNull();
+    });
+
+    it('a rewarded ad shortens the wait, and nothing happens if the ad is not rewarded', async () => {
       const g = setup(played());
-      expect(g.crack(10, 'daily')).toBeNull();
+      g.crack(1, 'daily');
+      ads.reward = false;
+      expect(await g.reduceFreePullWithAd()).toBe(0);
+      expect(g.freePullRemainingMs()).toBe(FP.cooldownMs);
+      ads.reward = true;
+      expect(await g.reduceFreePullWithAd()).toBe(FP.adReduceMs);
+      expect(g.freePullRemainingMs()).toBe(FP.cooldownMs - FP.adReduceMs);
+      expect(ads.shown).toEqual(['freePull', 'freePull']);
+    });
+
+    it('never takes off more than what is left, and offers no ad when already ready', async () => {
+      const g = setup(played());
+      expect(await g.reduceFreePullWithAd()).toBe(0); // ready: nothing to shorten
+      expect(ads.shown).toEqual([]);
+      g.crack(1, 'daily');
+      now += FP.cooldownMs - 1000; // 1 second left
+      g.refreshClock();
+      expect(await g.reduceFreePullWithAd()).toBe(1000);
+      expect(g.freePullReady()).toBe(true);
+    });
+
+    it('shards shorten the wait, and need enough shards', () => {
+      const g = setup(played({ shards: FP.shardCost - 1 }));
+      g.crack(1, 'daily');
+      expect(g.canPayShardsForTimer()).toBe(false);
+      expect(g.reduceFreePullWithShards()).toBe(0);
+      expect(g.shards()).toBe(FP.shardCost - 1);
+      patch(g, { shards: FP.shardCost + 4 });
+      expect(g.canPayShardsForTimer()).toBe(true);
+      expect(g.reduceFreePullWithShards()).toBe(FP.shardReduceMs);
+      expect(g.shards()).toBe(4);
+      expect(g.freePullRemainingMs()).toBe(FP.cooldownMs - FP.shardReduceMs);
+    });
+
+    it('a shard payment while ready costs nothing', () => {
+      const g = setup(played({ shards: 50 }));
+      expect(g.reduceFreePullWithShards()).toBe(0);
+      expect(g.shards()).toBe(50);
+    });
+
+    it('does not offer ads while ads are hidden, but shards still work', async () => {
+      const g = setup(played({ shards: 50 }));
+      g.crack(1, 'daily');
+      ads.available.set(false);
+      expect(g.adsAvailable()).toBe(false);
+      expect(await g.reduceFreePullWithAd()).toBe(0);
+      expect(ads.shown).toEqual([]);
+      expect(g.reduceFreePullWithShards()).toBeGreaterThan(0);
+    });
+
+    it('crew gems with a timer passive shorten the wait while equipped', () => {
+      const g = setup(played({ collection: { ember: { level: 1 }, fern: { level: 1 }, pebble: { level: 1 } } }));
+      expect(g.timerReduction()).toBe(0);
+      expect(g.freeCooldownMs()).toBe(FP.cooldownMs);
+      g.addToCrew('ember'); // Ruby: -6%
+      g.addToCrew('fern'); // Emerald: -4%
+      g.addToCrew('pebble'); // Quartz: no timer effect
+      expect(g.timerReduction()).toBeCloseTo(0.1, 10);
+      expect(g.freeCooldownMs()).toBe(Math.round(FP.cooldownMs * 0.9));
+      g.removeFromCrew('ember');
+      expect(g.timerReduction()).toBeCloseTo(0.04, 10);
+    });
+
+    it('a crew passive shortens a wait already in progress', () => {
+      const g = setup(played({ collection: { ember: { level: 1 } } }));
+      g.crack(1, 'daily');
+      const before = g.freePullRemainingMs();
+      g.addToCrew('ember');
+      expect(g.freePullRemainingMs()).toBeLessThan(before);
+    });
+
+    it('higher levels cut more, and the total is capped', () => {
+      const all = { halo: { level: 10 }, ember: { level: 10 }, cherry: { level: 10 }, blaze: { level: 10 }, fern: { level: 10 } };
+      const g = setup(played({ collection: all, crew: ['halo', 'ember', 'cherry', 'blaze', 'fern'], crewSlots: 5 }));
+      expect(g.timerReduction()).toBe(FP.maxReduction);
+      expect(g.freeCooldownMs()).toBe(Math.round(FP.cooldownMs * (1 - FP.maxReduction)));
+    });
+  });
+
+  describe('crew preview', () => {
+    const gems = { plum: { level: 3 }, fern: { level: 1 }, ember: { level: 1 } };
+
+    it('shows totals before and after adding a gem', () => {
+      const g = setup(played({ collection: gems }));
+      g.addToCrew('fern');
+      const p = g.previewCrew('ember', { rarity: 'ruby', level: 1 });
+      expect(p.before.luck).toBeCloseTo(0.01, 10);
+      expect(p.after.luck).toBeCloseTo(0.03, 10);
+      expect(p.before.timerReduction).toBeCloseTo(0.04, 10);
+      expect(p.after.timerReduction).toBeCloseTo(0.1, 10);
+    });
+
+    it('shows totals before and after removing a gem that is in the crew', () => {
+      const g = setup(played({ collection: gems }));
+      g.addToCrew('fern');
+      g.addToCrew('ember');
+      const p = g.previewCrew('ember', { rarity: 'ruby', level: 1 });
+      expect(p.before.luck).toBeCloseTo(0.03, 10);
+      expect(p.after.luck).toBeCloseTo(0.01, 10);
+      expect(p.after.timerReduction).toBeCloseTo(0.04, 10);
+    });
+
+    it('can preview a gem the player has not found yet, at level 1', () => {
+      const g = setup(played({ collection: gems }));
+      const p = g.previewCrew('halo', { rarity: 'diamond', level: 1 });
+      expect(p.after.luck).toBeCloseTo(0.03, 10);
+      expect(p.after.timerReduction).toBeCloseTo(0.1, 10);
+      expect(g.crew()).toEqual([]); // a preview changes nothing
     });
   });
 
@@ -380,12 +509,13 @@ describe('GameStateService', () => {
 
     it('is not offered when ads are disabled or unavailable', async () => {
       const g = setup(played());
+      expect(g.adsSupported).toBe(true);
       g.setAdsEnabled(false);
       expect(g.adsAvailable()).toBe(false);
       expect(await g.claimStreak(true)).toBeNull();
       expect(ads.shown).toEqual([]);
       g.setAdsEnabled(true);
-      ads.available = false;
+      ads.available.set(false);
       expect(g.adsAvailable()).toBe(false);
     });
   });
@@ -491,47 +621,11 @@ describe('GameStateService', () => {
   });
 });
 
-describe('SimulatedAdService', () => {
-  beforeEach(() => vi.useFakeTimers());
-  afterEach(() => vi.useRealTimers());
-
-  it('rewards only after the full duration', async () => {
-    const svc = new SimulatedAdService(GAME_CONFIG);
-    let settled: boolean | null = null;
-    void svc.showRewarded('daily').then((r) => (settled = r));
-    expect(svc.dialog()?.placement).toBe('daily');
-
-    await vi.advanceTimersByTimeAsync(GAME_CONFIG.ads.simulatedDurationMs - 200);
-    expect(settled).toBeNull();
-    expect(svc.dialog()).not.toBeNull();
-
-    await vi.advanceTimersByTimeAsync(300);
-    expect(settled).toBe(true);
-    expect(svc.dialog()).toBeNull();
-  });
-
-  it('gives no reward when the player closes it early', async () => {
-    const svc = new SimulatedAdService(GAME_CONFIG);
-    const p = svc.showRewarded('daily');
-    await vi.advanceTimersByTimeAsync(1000);
-    svc.cancel();
-    expect(await p).toBe(false);
-    expect(svc.dialog()).toBeNull();
-    await vi.advanceTimersByTimeAsync(5000); // timer must be gone: no late reward
-  });
-
-  it('shows one ad at a time', async () => {
-    const svc = new SimulatedAdService(GAME_CONFIG);
-    void svc.showRewarded('daily');
-    expect(await svc.showRewarded('daily')).toBe(false);
-    svc.cancel();
-  });
-});
-
 describe('NoAdsService', () => {
-  it('is unavailable and never rewards', async () => {
+  it('has no ads, never rewards, and is not supported', async () => {
     const svc = new NoAdsService();
-    expect(svc.isAvailable()).toBe(false);
+    expect(svc.supported).toBe(false);
+    expect(svc.available()).toBe(false);
     expect(await svc.showRewarded()).toBe(false);
   });
 });

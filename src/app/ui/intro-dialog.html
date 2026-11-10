@@ -5,7 +5,7 @@
         @case (0) {
           <div class="art machine"><app-gold-machine [cost]="cfg.economy.crackCost1" /></div>
           <h2 id="intro-title">Welcome to Geode Genesis!</h2>
-          <p>A gold gem machine has appeared deep in the cave. Pull its lever in <strong>Mine</strong> to win cute gems. <strong>Your first pull is free.</strong></p>
+          <p>A gold gem machine has appeared deep in the cave. Pull its lever in <strong>Pulls</strong> to win cute gems. <strong>Your first pull is free.</strong></p>
         }
         @case (1) {
           <div class="art row">
@@ -13,7 +13,7 @@
             <app-gem-art [gem]="ember" class="small" />
           </div>
           <h2 id="intro-title">Collect them all</h2>
-          <p>Gems come in five rarities, and every {{ cfg.pity.emeraldOrBetter }} pulls you are guaranteed an Emerald or better. Duplicates level a gem up. More tabs unlock as you play: a free pull every day, goals, and your Lucky Crew.</p>
+          <p>Gems come in five rarities, and every {{ cfg.pity.emeraldOrBetter }} pulls you are guaranteed an Emerald or better. Duplicates level a gem up. More tabs unlock as you play: a free pull that comes back every few hours, goals, and your Lucky Crew.</p>
         }
         @default {
           <div class="art row">

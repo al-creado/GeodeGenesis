@@ -66,22 +66,16 @@
         </button>
       </li>
     } @else {
-      <li class="cell locked" [attr.aria-label]="'Undiscovered ' + c.gem.rarity + ' gem'">
-        <span class="q" aria-hidden="true">?</span>
-        <span class="n muted">{{ label(c.gem.rarity) }}</span>
+      <li>
+        <button type="button" class="cell locked" (click)="selected.set(c.gem.id)" [attr.aria-label]="'Undiscovered ' + label(c.gem.rarity) + ' gem. Open preview'">
+          <span class="q" aria-hidden="true">?</span>
+          <span class="n muted">{{ label(c.gem.rarity) }}</span>
+        </button>
       </li>
     }
   }
 </ul>
 
 @if (selectedGem(); as g) {
-  <app-gem-sheet
-    [gem]="g"
-    [level]="selectedLevel()"
-    [inCrew]="game.crew().includes(g.id)"
-    [crewUnlocked]="game.unlocks().crew"
-    [crewFull]="crewFull()"
-    (close)="selected.set(null)"
-    (toggleCrew)="toggleCrew()"
-  />
+  <app-gem-sheet [gem]="g" (close)="selected.set(null)" />
 }

@@ -101,7 +101,7 @@
       role="button"
       [attr.tabindex]="leverEnabled() ? 0 : -1"
       [attr.aria-disabled]="!leverEnabled()"
-      aria-label="Pull the lever to mine one gem"
+      aria-label="Pull the lever to pull one gem"
       (click)="pull()"
       (keydown.enter)="pull()"
       (keydown.space)="pull(); $event.preventDefault()"

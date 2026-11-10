@@ -7,7 +7,6 @@ import {
   dailyCells,
   dailyNext,
   INITIAL_DAILY,
-  freePullAvailable,
   localDayNumber,
   localWeekNumber,
   postCrackBonus,
@@ -50,18 +49,13 @@ describe('localDayNumber', () => {
   });
 });
 
-describe('weeks and free pulls', () => {
+describe('weeks', () => {
   it('starts weeks on Monday', () => {
     // epoch day 0 was a Thursday; day 4 is the next Monday.
     expect(localWeekNumber(0)).toBe(localWeekNumber(3)); // Thu..Sun
     expect(localWeekNumber(4)).toBe(localWeekNumber(0) + 1); // Monday starts a new week
     expect(localWeekNumber(4)).toBe(localWeekNumber(10)); // Mon..Sun
     expect(localWeekNumber(11)).toBe(localWeekNumber(4) + 1);
-  });
-  it('gives one free pull per local day', () => {
-    expect(freePullAvailable(null, 100)).toBe(true);
-    expect(freePullAvailable(100, 100)).toBe(false);
-    expect(freePullAvailable(100, 101)).toBe(true);
   });
 });
 

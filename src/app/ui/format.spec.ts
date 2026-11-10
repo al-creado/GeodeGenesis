@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describeReward, formatDuration, luckPct, pct, shortReward } from './format';
+import { describeReward, formatDuration, luckPct, pct, shortReward, timerPct } from './format';
 
 describe('format helpers', () => {
   it('formats odds', () => {
@@ -11,6 +11,11 @@ describe('format helpers', () => {
     expect(luckPct(0.035)).toBe('+3.5%');
     expect(luckPct(0.002)).toBe('+0.2%');
     expect(luckPct(0.15)).toBe('+15%');
+  });
+  it('formats a wait cut', () => {
+    expect(timerPct(0.02)).toBe('-2%');
+    expect(timerPct(0.038)).toBe('-3.8%');
+    expect(timerPct(0)).toBe('-0%');
   });
   it('formats durations', () => {
     expect(formatDuration(3 * 3_600_000 + 12 * 60_000)).toBe('3h 12m');

@@ -1,33 +1,60 @@
 <div class="backdrop" (click)="close.emit()">
-  <div class="box" role="dialog" aria-modal="true" [attr.aria-label]="gem().name + ' profile'" (click)="$event.stopPropagation()">
+  <div class="box" role="dialog" aria-modal="true" [attr.aria-label]="(owned() ? gem().name : 'Undiscovered ' + label[gem().rarity] + ' gem') + ' preview'" (click)="$event.stopPropagation()">
     <div class="grab" aria-hidden="true"></div>
-    <div class="pf"><app-gem-art [gem]="gem()" /></div>
-    <h2>{{ gem().name }}</h2>
-    <p class="rarity">{{ label[gem().rarity] }}</p>
-    <p class="flavor">{{ gem().flavor }}</p>
+    @if (owned()) {
+      <div class="pf"><app-gem-art [gem]="gem()" /></div>
+      <h2>{{ gem().name }}</h2>
+      <p class="rarity">{{ label[gem().rarity] }}</p>
+      <p class="flavor">{{ gem().flavor }}</p>
+      <div class="lvrow">
+        <b>Level {{ level() }} of {{ maxLevel }}</b>
+        <span class="pips" aria-hidden="true">
+          @for (p of pips; track p) { <i [class.on]="p <= level()"></i> }
+        </span>
+      </div>
+    } @else {
+      <div class="pf mystery" aria-hidden="true"><span>?</span></div>
+      <h2>Undiscovered gem</h2>
+      <p class="rarity">{{ label[gem().rarity] }}</p>
+      <p class="flavor">Find it to see its name. Its stats are shown below as if it were level 1.</p>
+    }
 
-    <div class="lvrow">
-      <b>Level {{ level() }} of {{ maxLevel }}</b>
-      <span class="pips" aria-hidden="true">
-        @for (p of pips; track p) { <i [class.on]="p <= level()"></i> }
-      </span>
-    </div>
-    <div class="bar" role="progressbar" aria-label="Level" [attr.aria-valuenow]="level()" aria-valuemin="1" [attr.aria-valuemax]="maxLevel">
-      <i [style.width.%]="(level() / maxLevel) * 100"></i>
-    </div>
-    <p class="muted small">
-      @if (isMax()) { Max level. Another duplicate turns into {{ shardsOnDupe() }} shards. }
-      @else { The next duplicate raises it to level {{ level() + 1 }}. }
+    <h3>Rewards</h3>
+    <ul class="rows">
+      @if (!owned()) {
+        <li><span>First copy</span><b>Joins your Vault at level 1</b></li>
+        <li><span>Exchange price</span><b>{{ price() }} shards</b></li>
+      } @else if (isMax()) {
+        <li><span>Another copy</span><b>+{{ shardsOnDupe() }} shards (max level)</b></li>
+      } @else {
+        <li><span>Another copy</span><b>Level {{ level() + 1 }}</b></li>
+      }
+      <li><span>At max level</span><b>Luck {{ luckPct(atMax().luck) }}@if (atMax().timerReduction > 0) {, wait {{ timerPct(atMax().timerReduction) }}}</b></li>
+    </ul>
+
+    <h3>Passive effects <span class="muted sm">(while in your crew)</span></h3>
+    <ul class="rows">
+      <li><span>Luck</span><b>{{ luckPct(now().luck) }}</b></li>
+      <li>
+        <span>Free-pull wait</span>
+        @if (hasTimerPassive()) { <b>{{ timerPct(now().timerReduction) }}</b> } @else { <b class="muted">No effect</b> }
+      </li>
+    </ul>
+
+    <h3>Your crew</h3>
+    <ul class="rows">
+      <li><span>Total luck</span><b>{{ luckPct(preview().before.luck) }}@if (changes()) { &rarr; {{ luckPct(preview().after.luck) }} }</b></li>
+      <li><span>Free-pull wait</span><b>{{ formatDuration(waitBefore()) }}@if (changes()) { &rarr; {{ formatDuration(waitAfter()) }} }</b></li>
+    </ul>
+    <p class="muted sm note">
+      @if (inCrew()) { Shown: your crew now, and without this gem. }
+      @else if (crewFull()) { Your crew is full, so this is what it would be with one more gem. }
+      @else { Shown: your crew now, and with this gem added. }
+      All gem stats are exact. Nothing is rolled.
     </p>
 
-    <div class="stat"><span>Crew luck now</span><b>{{ luckPct(now()) }}</b></div>
-    <p class="muted small">
-      Each level above 1 adds {{ luckPct(perLevel()) }}. At level {{ maxLevel }} this gem gives {{ luckPct(atMax()) }}.
-      @if (!isMax()) { Level {{ level() + 1 }} would give {{ luckPct(next()) }}. }
-    </p>
-
-    @if (crewUnlocked()) {
-      <button type="button" class="btn" [disabled]="!inCrew() && crewFull()" (click)="toggleCrew.emit()">
+    @if (canToggle()) {
+      <button type="button" class="btn" [disabled]="!inCrew() && crewFull()" (click)="toggle()">
         {{ inCrew() ? 'Remove from crew' : crewFull() ? 'Crew is full' : 'Add to crew' }}
       </button>
     }

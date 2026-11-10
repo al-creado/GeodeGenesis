@@ -13,7 +13,7 @@
     </div>
   </div>
   <p class="center">Every {{ cfg.shop.sparkAt }} pulls, pick <b class="gold">any gem</b> you want.</p>
-  <p class="muted small center">Extra progress carries over, and it never resets your pity. Free daily pulls and tickets count too.</p>
+  <p class="muted small center">Extra progress carries over, and it never resets your pity. Free pulls and tickets count too.</p>
   <button type="button" class="btn" [disabled]="!game.sparkIsReady()" (click)="picking.set(true)">
     {{ game.sparkIsReady() ? 'Choose any gem' : cfg.shop.sparkAt - game.sparkProgress() + ' pulls to go' }}
   </button>

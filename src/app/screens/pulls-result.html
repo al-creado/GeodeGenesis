@@ -84,11 +84,11 @@
 
       <div class="btn-row">
         <button type="button" class="btn" [disabled]="!canAgain()" (click)="again()">
-          Mine again &middot; {{ againCost() }} coins
+          Pull again &middot; {{ againCost() }} coins
         </button>
-        <a class="btn btn-quiet" routerLink="/mine">Back to Mine</a>
+        <a class="btn btn-quiet" routerLink="/pulls">Back to Pulls</a>
       </div>
-      @if (!canAgain()) { <p class="muted small center">Not enough coins to mine again.</p> }
+      @if (!canAgain()) { <p class="muted small center">Not enough coins to pull again.</p> }
     </div>
   }
 }

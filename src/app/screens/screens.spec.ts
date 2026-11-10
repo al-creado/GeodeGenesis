@@ -1,4 +1,4 @@
-import { Component, Type } from '@angular/core';
+import { Component, signal, Type } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -8,12 +8,13 @@ import { Collection } from '../core/pull';
 import { ROSTER } from '../core/roster';
 import { createNewSave, SaveData } from '../core/save';
 import { GameStateService } from '../services/game-state.service';
+import { AdPlacement, AdService } from '../services/ad.service';
 import { SaveService } from '../services/save.service';
 import { IntroDialog } from '../ui/intro-dialog';
 import { Crew } from './crew';
 import { Daily } from './daily';
-import { Mine } from './mine';
-import { MineResult } from './mine-result';
+import { Pulls } from './pulls';
+import { PullsResult } from './pulls-result';
 import { Settings } from './settings';
 import { Shop } from './shop';
 import { Vault } from './vault';
@@ -32,23 +33,31 @@ class MemorySave extends SaveService {
 @Component({ template: '' })
 class Blank {}
 
+/** An ad provider that has an ad ready (so the ad UI is visible). */
+class ReadyAds extends AdService {
+  override readonly supported = true;
+  override readonly available = signal(true);
+  override async showRewarded(_p: AdPlacement): Promise<boolean> { return true; }
+}
+
 const own = (ids: string[], level = 1): Collection => Object.fromEntries(ids.map((id) => [id, { level }]));
 /** A save for someone who has already made their first pull. */
 const played = (extra: Partial<SaveData> = {}): Partial<SaveData> => ({ totalCracks: 12, collection: own(['pebble', 'plum']), ...extra });
 
-function configure(component: Type<unknown>, seed?: Partial<SaveData>): void {
+function configure(component: Type<unknown>, seed?: Partial<SaveData>, ads = false): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [component],
     providers: [
       provideRouter([{ path: '**', component: Blank }]),
       { provide: SaveService, useValue: new MemorySave(seed ? { ...createNewSave(Date.now()), ...seed } : null) },
+      ...(ads ? [{ provide: AdService, useValue: new ReadyAds() }] : []),
     ],
   });
 }
 
-function render(component: Type<unknown>, seed?: Partial<SaveData>): HTMLElement {
-  configure(component, seed);
+function render(component: Type<unknown>, seed?: Partial<SaveData>, ads = false): HTMLElement {
+  configure(component, seed, ads);
   const fixture = TestBed.createComponent(component);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
@@ -62,11 +71,42 @@ describe('screens', () => {
   describe('Daily', () => {
     it('shows the free pull, the 7-day calendar and the goals', () => {
       const el = render(Daily, played());
-      expect(el.textContent).toContain('Free daily pull');
+      expect(el.textContent).toContain('Free pull');
       expect(el.textContent).toContain('Pull for free');
       expect(el.querySelectorAll('.day')).toHaveLength(E.streakRewards.length);
       expect(el.querySelectorAll('.goal')).toHaveLength(GAME_CONFIG.goals.daily.length + GAME_CONFIG.goals.weekly.length);
+    });
+
+    it('hides every ad button and the ad note when no ads are available', () => {
+      const el = render(Daily, played({ freePullAt: Date.now() }));
+      expect(el.querySelector('.btn-ad')).toBeNull();
+      expect(el.textContent).not.toContain('Ads are optional');
+      expect(el.textContent).not.toContain('Watch ad');
+    });
+
+    it('shows the ad buttons and the disclosure when an ad is available', () => {
+      const el = render(Daily, played({ freePullAt: Date.now() }), true);
+      expect(el.querySelectorAll('.btn-ad').length).toBeGreaterThanOrEqual(2); // free-pull wait and calendar coins
       expect(el.textContent).toContain('Ads are optional and never change your pull odds.');
+    });
+
+    it('shows the free-pull countdown with ways to shorten it', () => {
+      const el = render(Daily, played({ freePullAt: Date.now(), shards: 10 }), true);
+      expect(el.querySelector('[role=timer]')?.textContent).toContain('Next free pull in');
+      expect(el.textContent).toContain('Watch ad: wait -1h 0m');
+      const shardBtn = [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('shards: wait'))!;
+      expect(shardBtn.hasAttribute('disabled')).toBe(false);
+      const game = TestBed.inject(GameStateService);
+      const before = game.freePullRemainingMs();
+      click(shardBtn);
+      expect(game.shards()).toBe(10 - GAME_CONFIG.freePull.shardCost);
+      expect(game.freePullRemainingMs()).toBeLessThan(before);
+    });
+
+    it('disables the shard button when you cannot pay', () => {
+      const el = render(Daily, played({ freePullAt: Date.now(), shards: 0 }));
+      const shardBtn = [...el.querySelectorAll('button')].find((b) => b.textContent?.includes('shards: wait'))!;
+      expect(shardBtn.hasAttribute('disabled')).toBe(true);
     });
 
     it('claims the calendar reward', async () => {
@@ -95,9 +135,9 @@ describe('screens', () => {
     });
   });
 
-  describe('Mine', () => {
+  describe('Pulls', () => {
     it('shows the gold machine, whose lever makes the free first pull', () => {
-      const el = render(Mine);
+      const el = render(Pulls);
       expect(el.querySelector('app-gold-machine')).not.toBeNull();
       expect(el.textContent).toContain('Gold Gem Machine');
       expect(el.textContent).toContain('Your first pull is free!');
@@ -110,7 +150,7 @@ describe('screens', () => {
     });
 
     it('hides what is not unlocked yet: pity bars and the luck chip', () => {
-      const el = render(Mine);
+      const el = render(Pulls);
       expect(el.textContent).not.toContain('Pity progress');
       expect(el.querySelector('.chip')).toBeNull();
       expect(el.textContent).toContain('Full rates and pity rules'); // the disclosure is always there
@@ -118,20 +158,27 @@ describe('screens', () => {
     });
 
     it('shows pity bars and the luck chip once unlocked', () => {
-      const el = render(Mine, played({ totalCracks: GAME_CONFIG.unlocks.pityAfterPulls, collection: own(['pebble', 'fern']) }));
+      const el = render(Pulls, played({ totalCracks: GAME_CONFIG.unlocks.pityAfterPulls, collection: own(['pebble', 'fern']) }));
       expect(el.textContent).toContain('Pity progress');
       expect(el.querySelector('.chip')).not.toBeNull();
     });
 
     it('shows costs, and a free x10 ticket button when you have one', () => {
-      const el = render(Mine, played({ tenTickets: 2 }));
+      const el = render(Pulls, played({ tenTickets: 2 }));
       expect(el.textContent).toContain(`${E.crackCost1} coins`);
       expect(el.textContent).toContain(`${E.crackCost10} coins`);
       expect(el.textContent).toContain('Use a free x10 pull (2)');
     });
 
+    it('shows a free pull button when the free pull is ready, and a countdown when it is not', () => {
+      expect(render(Pulls, played()).textContent).toContain('Free pull ready!');
+      const waiting = render(Pulls, played({ freePullAt: Date.now() }));
+      expect(waiting.textContent).not.toContain('Free pull ready!');
+      expect(waiting.textContent).toContain('Next free pull in');
+    });
+
     it('locks the lever when the player cannot afford a pull', () => {
-      const el = render(Mine, played({ coins: E.crackCost1 - 1 }));
+      const el = render(Pulls, played({ coins: E.crackCost1 - 1 }));
       expect(el.querySelector<SVGGElement>('.lever')!.getAttribute('aria-disabled')).toBe('true');
       expect(el.textContent).toContain('Not enough coins');
     });
@@ -167,10 +214,24 @@ describe('screens', () => {
       click(el.querySelector('button.cell'));
       fixture.detectChanges();
       expect(el.querySelector('app-gem-sheet')).not.toBeNull();
-      expect(el.textContent).toContain('Crew luck now');
+      expect(el.textContent).toContain('Passive effects');
       click([...el.querySelectorAll('app-gem-sheet button')].find((b) => b.textContent?.trim() === 'Close')!);
       fixture.detectChanges();
       expect(el.querySelector('app-gem-sheet')).toBeNull();
+    });
+
+    it('opens a preview of an undiscovered gem that hides its name but shows its stats', () => {
+      configure(Vault, played());
+      const fixture = TestBed.createComponent(Vault);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      click(el.querySelector('button.locked'));
+      fixture.detectChanges();
+      const sheet = el.querySelector('app-gem-sheet')!;
+      expect(sheet.textContent).toContain('Undiscovered gem');
+      expect(sheet.textContent).toContain('Passive effects');
+      expect(sheet.textContent).toContain('Exchange price');
+      expect(sheet.textContent).not.toMatch(/Dewdrop|Frost|Honey|Mochi|Pip|Biscuit|Sprout/);
     });
 
     it('links to the shop only once it is unlocked', () => {
@@ -216,6 +277,56 @@ describe('screens', () => {
       expect(el.querySelectorAll('.slot.locked')).toHaveLength(GAME_CONFIG.crew.maxSlots - GAME_CONFIG.crew.startSlots);
     });
 
+    it('adds a gem from the top: tap an empty slot, then pick one', () => {
+      configure(Crew, played({ collection: own(['pebble', 'plum', 'ember']) }));
+      const fixture = TestBed.createComponent(Crew);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const game = TestBed.inject(GameStateService);
+      click(el.querySelector('.slots button.add'));
+      fixture.detectChanges();
+      expect(el.querySelector('[aria-label="Add a gem to your crew"]')).not.toBeNull();
+      click([...el.querySelectorAll('.pmain')].find((b) => b.textContent?.includes('Ember'))!);
+      fixture.detectChanges();
+      expect(game.crew()).toEqual(['ember']);
+      expect(el.querySelector('[aria-label="Add a gem to your crew"]')).toBeNull();
+      expect(el.querySelectorAll('.slots .slot.filled')).toHaveLength(1);
+    });
+
+    it('removes a gem from the top with the x on its slot', () => {
+      configure(Crew, played({ collection: own(['pebble', 'plum']), crew: ['plum'] }));
+      const fixture = TestBed.createComponent(Crew);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      click(el.querySelector('.slots .slot.filled .x'));
+      fixture.detectChanges();
+      expect(TestBed.inject(GameStateService).crew()).toEqual([]);
+      expect(el.querySelectorAll('.slots .slot.filled')).toHaveLength(0);
+    });
+
+    it('opens the gem preview from a crew slot, with before and after totals', () => {
+      configure(Crew, played({ collection: own(['pebble', 'ember']), crew: ['ember'] }));
+      const fixture = TestBed.createComponent(Crew);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      click(el.querySelector('.slots .slot-main'));
+      fixture.detectChanges();
+      const sheet = el.querySelector('app-gem-sheet')!;
+      expect(sheet.textContent).toContain('Ember');
+      expect(sheet.textContent).toContain('Rewards');
+      expect(sheet.textContent).toContain('Passive effects');
+      expect(sheet.textContent).toContain('Free-pull wait');
+      expect(sheet.textContent).toContain('Your crew');
+      expect(sheet.textContent).toContain('+2% → +0%'); // removing Ember drops luck
+      expect(sheet.textContent).toContain('All gem stats are exact');
+    });
+
+    it('shows the crew wait cut in the total card', () => {
+      const el = render(Crew, played({ collection: own(['ember']), crew: ['ember'] }));
+      expect(el.textContent).toContain('Free-pull wait');
+      expect(el.textContent).toContain('-6% from your crew');
+    });
+
     it('breaks total luck down by source', () => {
       const el = render(Crew, played());
       expect(el.textContent).toContain('Crew gems');
@@ -231,7 +342,24 @@ describe('screens', () => {
       expect(el.textContent).toContain('60.00%');
       expect(el.textContent).toContain(`pull number ${GAME_CONFIG.pity.emeraldOrBetter}`);
       expect(el.textContent).toContain(`pull number ${GAME_CONFIG.pity.rubyOrBetter}`);
+    });
+
+    it('hides the whole ads section when ads are not supported', () => {
+      const el = render(Settings);
+      expect(el.textContent).not.toContain('Offer rewarded ads');
+      expect(el.textContent).not.toContain('Ads are optional');
+    });
+
+    it('shows the ads section with the disclosure when ads are supported', () => {
+      const el = render(Settings, undefined, true);
+      expect(el.textContent).toContain('Offer rewarded ads');
       expect(el.textContent).toContain('Ads are optional and never change your pull odds.');
+    });
+
+    it('explains the free-pull wait and how to shorten it', () => {
+      const el = render(Settings);
+      expect(el.textContent).toContain('a free pull comes back every 4h 0m');
+      expect(el.textContent).toContain('Lucky Crew cut it');
     });
 
     it('explains every source of luck, the spark and the exchange', () => {
@@ -274,14 +402,14 @@ describe('screens', () => {
     expect(el.querySelector('[role=dialog]')).toBeNull();
   });
 
-  describe('MineResult', () => {
+  describe('PullsResult', () => {
     afterEach(() => vi.useRealTimers());
 
     it('plays pull, then drop, then opens, before showing the gem', () => {
       vi.useFakeTimers();
-      configure(MineResult);
+      configure(PullsResult);
       TestBed.inject(GameStateService).crack(1);
-      const fixture = TestBed.createComponent(MineResult);
+      const fixture = TestBed.createComponent(PullsResult);
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       const state = () => el.querySelector('svg.machine')?.getAttribute('class') ?? '';
@@ -300,9 +428,9 @@ describe('screens', () => {
     });
 
     it('shows a gem after a single pull, and tells the player what it unlocked', () => {
-      configure(MineResult);
+      configure(PullsResult);
       TestBed.inject(GameStateService).crack(1);
-      const fixture = TestBed.createComponent(MineResult);
+      const fixture = TestBed.createComponent(PullsResult);
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       click(el.querySelector('.stage'));
@@ -310,15 +438,15 @@ describe('screens', () => {
       expect(el.querySelector('.gem-card')).not.toBeNull();
       expect(el.textContent).toContain('NEW!');
       expect(el.textContent).toContain('Vault is unlocked');
-      expect(el.textContent).toContain('Mine again');
-      expect(el.textContent).toContain('Back to Mine');
+      expect(el.textContent).toContain('Pull again');
+      expect(el.textContent).toContain('Back to Pulls');
       expect(el.querySelector('.bonus')).toBeNull(); // the first pull is free, so no bonus coins
     });
 
     it('a ten-pull shows closed capsules colored by rarity, and opens them one at a time or all at once', () => {
-      configure(MineResult, played({ coins: 5000 }));
+      configure(PullsResult, played({ coins: 5000 }));
       TestBed.inject(GameStateService).crack(10);
-      const fixture = TestBed.createComponent(MineResult);
+      const fixture = TestBed.createComponent(PullsResult);
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       click(el.querySelector('.stage'));
@@ -337,9 +465,9 @@ describe('screens', () => {
 
     it('open all reveals every capsule', () => {
       vi.useFakeTimers();
-      configure(MineResult, played({ coins: 5000 }));
+      configure(PullsResult, played({ coins: 5000 }));
       TestBed.inject(GameStateService).crack(10);
-      const fixture = TestBed.createComponent(MineResult);
+      const fixture = TestBed.createComponent(PullsResult);
       fixture.detectChanges();
       vi.advanceTimersByTime(2000);
       fixture.detectChanges();
@@ -352,16 +480,16 @@ describe('screens', () => {
       expect(el.textContent).toContain('new');
     });
 
-    it('a paid pull shows the bonus coins and Mine again costs coins', () => {
-      configure(MineResult, played());
+    it('a paid pull shows the bonus coins and Pull again costs coins', () => {
+      configure(PullsResult, played());
       TestBed.inject(GameStateService).crack(1);
-      const fixture = TestBed.createComponent(MineResult);
+      const fixture = TestBed.createComponent(PullsResult);
       fixture.detectChanges();
       const el = fixture.nativeElement as HTMLElement;
       click(el.querySelector('.stage'));
       fixture.detectChanges();
       expect(el.querySelector('.bonus')).not.toBeNull();
-      expect(el.textContent).toContain(`Mine again · ${E.crackCost1} coins`);
+      expect(el.textContent).toContain(`Pull again · ${E.crackCost1} coins`);
     });
   });
 });

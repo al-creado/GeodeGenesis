@@ -23,13 +23,13 @@ const GLOW: Record<Rarity, string> = {
 };
 
 @Component({
-  selector: 'app-mine-result',
+  selector: 'app-pulls-result',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [GemArt, GoldMachine, AdNote, RouterLink],
-  templateUrl: './mine-result.html',
-  styleUrl: './mine-result.scss',
+  templateUrl: './pulls-result.html',
+  styleUrl: './pulls-result.scss',
 })
-export class MineResult implements OnInit {
+export class PullsResult implements OnInit {
   protected readonly game = inject(GameStateService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
@@ -53,7 +53,7 @@ export class MineResult implements OnInit {
       daily: 'Daily is unlocked: a free pull, a login calendar and goals.',
       crew: 'Crew is unlocked! Gems in your crew add luck to every pull.',
       shop: 'The Shop is unlocked in the Vault: spark and shard exchange.',
-      pity: 'Pity progress is now shown on the Mine screen.',
+      pity: 'Pity progress is now shown on the Pulls screen.',
     };
     return (this.batch()?.unlocked ?? []).map((k) => names[k]);
   });
@@ -77,7 +77,7 @@ export class MineResult implements OnInit {
 
   ngOnInit(): void {
     if (!this.batch()) {
-      void this.router.navigate(['/mine'], { replaceUrl: true });
+      void this.router.navigate(['/pulls'], { replaceUrl: true });
       return;
     }
     this.startReveal();

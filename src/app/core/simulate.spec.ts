@@ -27,7 +27,7 @@ describe('simulatePlayer', () => {
       progression: { ...GAME_CONFIG.progression, milestones: [] },
       shop: { ...GAME_CONFIG.shop, sparkAt: 1_000_000 },
     };
-    const r = simulatePlayer(PROFILES[2], 1, 1, poor);
+    const r = simulatePlayer({ ...PROFILES[2], visitsPerDay: 1, watchAds: false }, 1, 1, poor);
     // day 1: the free daily pull, then 300 coins = 3 single pulls (the first pull is the free one)
     expect(r.totalCracks).toBe(1 + 3);
   });

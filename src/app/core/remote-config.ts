@@ -16,7 +16,7 @@ const isInt = (v: unknown, min: number, max = 1_000_000_000): v is number => isN
  * Apply a Remote Config JSON override to a base config.
  *
  * Only economy tuning numbers can change. Ad unit ids, save version, level cap, slot counts,
- * goals, milestones, set bonuses and unlock rules are never overridable. Each group is validated on its own: an invalid
+ * goals, milestones, set bonuses, passive timer cuts and unlock rules are never overridable. Each group is validated on its own: an invalid
  * group is ignored and the rest still applies. Odds must still sum to 100.
  */
 export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideResult {
@@ -31,6 +31,7 @@ export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideRe
   let pity = base.pity;
   let duplicates = base.duplicates;
   let shop = base.shop;
+  let freePull = base.freePull;
 
   const group = (name: string, present: boolean, apply: () => boolean): void => {
     if (!present) return;
@@ -169,7 +170,33 @@ export function applyRemoteOverrides(base: GameConfig, raw: unknown): OverrideRe
     return true;
   });
 
-  return { config: { ...base, economy, baseOdds, luckPerGem, crew, pity, duplicates, shop }, applied, rejected };
+  const fp = raw['freePull'];
+  group('freePull', isObject(fp), () => {
+    const o = fp as Record<string, unknown>;
+    const next = { ...freePull };
+    if ('cooldownMs' in o) {
+      if (!isInt(o['cooldownMs'], 60_000, 7 * 24 * 3_600_000)) return false;
+      next.cooldownMs = o['cooldownMs'];
+    }
+    for (const key of ['adReduceMs', 'shardReduceMs'] as const) {
+      if (key in o) {
+        if (!isInt(o[key], 0, 7 * 24 * 3_600_000)) return false;
+        next[key] = o[key];
+      }
+    }
+    if ('shardCost' in o) {
+      if (!isInt(o['shardCost'], 1, 100_000)) return false;
+      next.shardCost = o['shardCost'];
+    }
+    if ('maxReduction' in o) {
+      if (!isNum(o['maxReduction']) || o['maxReduction'] < 0 || o['maxReduction'] > 0.9) return false;
+      next.maxReduction = o['maxReduction'];
+    }
+    freePull = next;
+    return true;
+  });
+
+  return { config: { ...base, economy, baseOdds, luckPerGem, crew, pity, duplicates, shop, freePull }, applied, rejected };
 }
 
 /** Parse the JSON string stored in the `economy_config` Remote Config parameter. */

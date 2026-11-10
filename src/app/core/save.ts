@@ -16,8 +16,10 @@ export interface SaveData {
   readonly crew: readonly string[];
   readonly crewSlots: number;
   readonly daily: DailyState;
-  /** Local day number of the last free daily pull, or null. */
-  readonly freePullDay: number | null;
+  /** When the last free pull was taken (epoch ms), or null if it is ready. */
+  readonly freePullAt: number | null;
+  /** Time taken off the current free-pull wait by ads and shards. */
+  readonly freePullBoostMs: number;
   readonly goals: GoalState;
   /** Collection milestones (by gem count) whose reward was claimed. */
   readonly claimedMilestones: readonly number[];
@@ -46,7 +48,8 @@ export function createNewSave(nowMs: number, config: GameConfig = GAME_CONFIG): 
     crew: [],
     crewSlots: config.crew.startSlots,
     daily: INITIAL_DAILY,
-    freePullDay: null,
+    freePullAt: null,
+    freePullBoostMs: 0,
     goals: INITIAL_GOALS,
     claimedMilestones: [],
     sparkProgress: 0,
@@ -83,6 +86,13 @@ const MIGRATIONS: Readonly<Record<number, (old: Record<string, unknown>) => Reco
       claimedMilestones: [],
       sparkProgress: typeof old['totalCracks'] === 'number' ? old['totalCracks'] : 0,
     };
+  },
+  // v4 -> v5: the once-a-day free pull becomes a free pull with a shortenable wait.
+  // The free pull starts ready, so nobody loses one.
+  4: (old) => {
+    const { freePullDay: _dropped, ...rest } = old;
+    void _dropped;
+    return { ...rest, version: 5, freePullAt: null, freePullBoostMs: 0 };
   },
 };
 
@@ -139,7 +149,8 @@ export function migrateSave(raw: unknown, nowMs: number, config: GameConfig = GA
       claimedDay: int(daily['claimedDay'], 0, 0, config.economy.streakRewards.length),
       lastClaimDay: typeof lastClaim === 'number' && Number.isFinite(lastClaim) ? Math.floor(lastClaim) : null,
     },
-    freePullDay: typeof data['freePullDay'] === 'number' && Number.isFinite(data['freePullDay']) ? Math.floor(data['freePullDay']) : null,
+    freePullAt: typeof data['freePullAt'] === 'number' && Number.isFinite(data['freePullAt']) ? Math.floor(data['freePullAt']) : null,
+    freePullBoostMs: int(data['freePullBoostMs'], 0, 0, 7 * 24 * 3_600_000),
     goals: {
       day: int(goals['day'], -1, -1),
       week: int(goals['week'], -1, -1),

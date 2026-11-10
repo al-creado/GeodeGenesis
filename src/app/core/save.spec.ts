@@ -11,7 +11,8 @@ describe('createNewSave', () => {
     expect(s.coins).toBe(GAME_CONFIG.economy.startingCoins);
     expect(s.crewSlots).toBe(GAME_CONFIG.crew.startSlots);
     expect(s.tenTickets).toBe(0);
-    expect(s.freePullDay).toBeNull();
+    expect(s.freePullAt).toBeNull();
+    expect(s.freePullBoostMs).toBe(0);
     expect(s.sparkProgress).toBe(0);
     expect(s.claimedMilestones).toEqual([]);
   });
@@ -41,6 +42,22 @@ describe('migrateSave', () => {
     const s = migrateSave({ version: 1, coins: 5, totalCracks: 2 }, NOW)!;
     expect(s.version).toBe(GAME_CONFIG.saveVersion);
     expect(s.settings.introSeen).toBe(true);
+  });
+  it('upgrades v4 to v5: the free pull starts ready and the old day field is dropped', () => {
+    const s = migrateSave({ version: 4, coins: 50, freePullDay: 19999, totalCracks: 3, collection: { pebble: { level: 1 } } }, NOW)!;
+    expect(s.version).toBe(GAME_CONFIG.saveVersion);
+    expect(s.freePullAt).toBeNull();
+    expect(s.freePullBoostMs).toBe(0);
+    expect(s.coins).toBe(50);
+    expect(JSON.stringify(s)).not.toContain('freePullDay');
+  });
+  it('keeps and sanitizes the free-pull timer', () => {
+    const ok = migrateSave({ ...createNewSave(NOW), freePullAt: 12345.9, freePullBoostMs: 600000 }, NOW)!;
+    expect(ok.freePullAt).toBe(12345);
+    expect(ok.freePullBoostMs).toBe(600000);
+    const bad = migrateSave({ ...createNewSave(NOW), freePullAt: 'soon', freePullBoostMs: -5 }, NOW)!;
+    expect(bad.freePullAt).toBeNull();
+    expect(bad.freePullBoostMs).toBe(0);
   });
   it('keeps savedAt on a v2 save', () => {
     expect(migrateSave({ ...createNewSave(NOW), savedAt: 12345 }, NOW)!.savedAt).toBe(12345);

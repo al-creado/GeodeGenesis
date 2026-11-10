@@ -128,6 +128,69 @@ describe('AdMobAdService', () => {
     expect(plugin.prepareCalls.length).toBe(2); // first load + preload of the next
   });
 
+  describe('availability (drives whether ad buttons are shown)', () => {
+    const rewardedOnShow = (): void => {
+      plugin.onShow = async () => { plugin.emit(ADMOB_EVENTS.rewarded); plugin.emit(ADMOB_EVENTS.dismissed); return {}; };
+    };
+
+    it('is supported and starts with no ad available', () => {
+      expect(svc.supported).toBe(true);
+      expect(svc.available()).toBe(false);
+    });
+
+    it('becomes available once an ad has loaded', async () => {
+      svc.start();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(svc.available()).toBe(true);
+    });
+
+    it('stays unavailable when the ad fails to load, so the UI shows no ad buttons', async () => {
+      plugin.prepareError = new Error('no fill');
+      svc.start();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(svc.available()).toBe(false);
+    });
+
+    it('is unavailable after an ad is shown until the next one loads', async () => {
+      svc.start();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(svc.available()).toBe(true);
+      plugin.onShow = () => new Promise(() => undefined); // the ad stays on screen
+      const p = svc.showRewarded('freePull');
+      await new Promise((r) => setTimeout(r, 0));
+      expect(svc.available()).toBe(false);
+      rewardedOnShow();
+      plugin.emit(ADMOB_EVENTS.rewarded);
+      plugin.emit(ADMOB_EVENTS.dismissed);
+      await p;
+      await new Promise((r) => setTimeout(r, 0));
+      expect(svc.available()).toBe(true); // the next ad was preloaded
+    });
+
+    it('tries again after a failed load, so the buttons appear when an ad becomes available', async () => {
+      vi.useFakeTimers();
+      plugin.prepareError = new Error('no fill');
+      svc.start();
+      await vi.advanceTimersByTimeAsync(10);
+      expect(svc.available()).toBe(false);
+      plugin.prepareError = null;
+      await vi.advanceTimersByTimeAsync(GAME_CONFIG.ads.retryMs + 10);
+      expect(svc.available()).toBe(true);
+    });
+
+    it('does not spin: only one retry is queued at a time', async () => {
+      vi.useFakeTimers();
+      plugin.prepareError = new Error('no fill');
+      svc.start();
+      await vi.advanceTimersByTimeAsync(10);
+      const calls = plugin.prepareCalls.length;
+      svc.start();
+      await vi.advanceTimersByTimeAsync(10);
+      await vi.advanceTimersByTimeAsync(GAME_CONFIG.ads.retryMs * 2);
+      expect(plugin.prepareCalls.length - calls).toBeLessThanOrEqual(4);
+    });
+  });
+
   describe('ad consent (UMP)', () => {
     const rewardedOnShow = (): void => {
       plugin.onShow = async () => { plugin.emit(ADMOB_EVENTS.rewarded); plugin.emit(ADMOB_EVENTS.dismissed); return {}; };

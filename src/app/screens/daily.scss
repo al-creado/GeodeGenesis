@@ -22,3 +22,7 @@
 .done { color: #7fe3b4; font-weight: 800; }
 .small-btn { min-height: 36px; padding: 2px 14px; font-size: 14px; border-radius: 10px; }
 .card > .btn { width: 100%; }
+.timer { margin: 4px 0 8px; font-size: 16px; }
+.timer b { color: var(--gold); }
+.card > .bar + .btn-row { margin-top: 12px; }
+.btn-quiet { margin-top: 0; }

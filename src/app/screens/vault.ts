@@ -26,8 +26,6 @@ export class Vault {
     const id = this.selected();
     return id ? findGem(ROSTER, id) : undefined;
   });
-  protected readonly selectedLevel = computed(() => this.game.collection()[this.selected() ?? '']?.level ?? 1);
-  protected readonly crewFull = computed(() => this.game.crew().length >= this.game.crewSlots());
   /** Progress bar fill: owned gems over the last milestone. */
   protected readonly lastMilestone = this.game.config.progression.milestones.at(-1)?.count ?? ROSTER.length;
   protected readonly maxLevel = this.game.config.duplicates.maxLevel;
@@ -45,12 +43,5 @@ export class Vault {
   protected claim(count: number): void {
     const reward = this.game.claimMilestone(count);
     if (reward) this.toast.show(`Collection reward: ${describeReward(reward)}`);
-  }
-
-  protected toggleCrew(): void {
-    const id = this.selected();
-    if (!id) return;
-    if (this.game.crew().includes(id)) this.game.removeFromCrew(id);
-    else if (!this.game.addToCrew(id)) this.toast.show('Crew is full. Remove a gem first.');
   }
 }

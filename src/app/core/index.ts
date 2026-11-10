@@ -14,3 +14,5 @@ export * from './goals';
 export * from './progression';
 export * from './shop';
 export * from './unlocks';
+export * from './passives';
+export * from './timer';

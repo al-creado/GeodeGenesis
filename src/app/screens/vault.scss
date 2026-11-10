@@ -25,6 +25,7 @@
 }
 
 button.cell { cursor: pointer; }
+button.locked { width: 100%; font: inherit; color: inherit; }
 .shoplink { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; padding: 10px 16px; min-height: 44px; border-radius: 999px; border: 2px solid var(--gold); background: var(--card); color: var(--text); text-decoration: none; font-weight: 800; font-size: 15px; }
 .track { height: 12px; border-radius: 6px; background: var(--nav); border: 2px solid var(--card-border); overflow: hidden; }
 .track i { display: block; height: 100%; background: var(--gold); }

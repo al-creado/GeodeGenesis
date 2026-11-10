@@ -8,6 +8,8 @@ export function gemLuck(rarity: Rarity, level: number, config: GameConfig = GAME
 }
 
 export interface CrewMember {
+  /** Gem id, when known (needed to preview removing a gem). */
+  readonly id?: string;
   readonly rarity: Rarity;
   readonly level: number;
 }
@@ -17,7 +19,7 @@ export function crewMembers(crew: readonly string[], collection: Collection, ros
   return crew.flatMap((id) => {
     const gem = roster.find((g) => g.id === id);
     const owned = collection[id];
-    return gem && owned ? [{ rarity: gem.rarity, level: owned.level }] : [];
+    return gem && owned ? [{ id: gem.id, rarity: gem.rarity, level: owned.level }] : [];
   });
 }
 

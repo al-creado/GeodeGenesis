@@ -3,14 +3,13 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { GameStateService } from './services/game-state.service';
 import { ToastService } from './services/toast.service';
 import { RARITY_LABEL } from './ui/format';
-import { AdDialog } from './ui/ad-dialog';
 import { IntroDialog } from './ui/intro-dialog';
 import { Stalactites } from './ui/stalactites';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Stalactites, AdDialog, IntroDialog],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Stalactites, IntroDialog],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
